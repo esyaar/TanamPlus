@@ -6,7 +6,7 @@ import { HapticTab } from '@/components/HapticTab';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { FontAwesome6, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Octicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -26,27 +26,24 @@ export default function TabLayout() {
           default: {},
         }),
       }}>
-      <Tabs.Screen
-        name="dashboard"
-        options={{
-          title: 'Dashboard',
-          tabBarIcon: ({ color }) => <MaterialCommunityIcons name="view-dashboard" size={24} color={color}  />,
-        }}
-      />
-      <Tabs.Screen
-        name="wilayahkerja"
-        options={{
-          title: 'Wilayah',
-          tabBarIcon: ({ color }) => <MaterialIcons name="people-alt" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="user"
-        options={{
-          title: 'User',
-          tabBarIcon: ({ color }) => <FontAwesome6 name="user-gear" size={24} color={color}/>,
-        }}
-      />
+  <Tabs.Screen
+    name="homepage"
+    options={{
+      title: 'Home',
+      tabBarIcon: ({ color }) => (
+      <MaterialCommunityIcons name="view-dashboard" size={24} color={color} />
+      ),
+    }}
+  />
+  <Tabs.Screen
+    name="riwayat"
+    options={{
+      title: 'Riwayat',
+      tabBarIcon: ({ color }) => (
+      <Octicons name="history" size={24} color={color} />
+      ),
+    }}
+  />
     </Tabs>
   );
 }

@@ -1,16 +1,16 @@
 import React, { Component } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { router } from 'expo-router';
-import { Feather, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
 
-type WilayahItemProps = {
-  kelurahan: string;
-  kecamatan: string;
+type RiwayatItemProps = { //komponen
+  jenisKomoditas: string;
+  tanggalInput: string;
   onDelete: () => void;
   onEdit: () => void;
 };
 
-class WilayahItem extends Component<WilayahItemProps> {
+class RiwayatItem extends Component<RiwayatItemProps> {
   showDeleteConfirmation = () => {
     Alert.alert(
       'Hapus Data',
@@ -23,12 +23,12 @@ class WilayahItem extends Component<WilayahItemProps> {
   };
 
   render() {
-    const { kelurahan, kecamatan, onEdit } = this.props;
+    const { jenisKomoditas, tanggalInput, onEdit } = this.props;
     return (
       <View style={styles.card}>
         <View>
-          <Text style={styles.title}>{kelurahan}</Text>
-          <Text style={styles.info}>{kecamatan}</Text>
+          <Text style={styles.title}>{jenisKomoditas}</Text>
+          <Text style={styles.date}>{tanggalInput}</Text>
         </View>
         <View style={styles.icons}>
           <TouchableOpacity onPress={this.showDeleteConfirmation} style={styles.iconButton}>
@@ -43,41 +43,35 @@ class WilayahItem extends Component<WilayahItemProps> {
   }
 }
 
-class Wilayah extends Component {
+class History extends Component {
   handleDelete = () => {
     console.log('Hapus data');
   };
 
   handleEdit = () => {
-    router.push('/Admin/edituser');
-  };
-
-  handleAddUser = () => {
-    router.push('/Admin/tambahuser');
+    router.push('/Penyuluh/edit');
   };
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>Wilayah Kerja</Text>
+          <Text style={styles.headerText}>Riwayat</Text>
         </View>
 
-        <TouchableOpacity style={styles.addWilayahButton} onPress={this.handleAddUser}>
-          <Text style={styles.addWilayahText}>Tambah Wilayah Kerja</Text>
-          <MaterialCommunityIcons name="plus" size={24} color="white" />
-        </TouchableOpacity>
-
         <View style={styles.body}>
-          <WilayahItem kelurahan="Bangun Rejo" kecamatan="Kecamatan Pagaralam Utara" onDelete={this.handleDelete} onEdit={this.handleEdit} />
-          <WilayahItem kelurahan="Beringin Jaya" kecamatan="Kecamatan Pagaralam Utara" onDelete={this.handleDelete} onEdit={this.handleEdit} />
+          <RiwayatItem
+            jenisKomoditas="Padi Hibridah"
+            tanggalInput="05/04/2025"
+            onDelete={this.handleDelete}
+            onEdit={this.handleEdit}
+          />
         </View>
       </View>
     );
   }
 }
-
-export default Wilayah;
+export default History;
 
 const styles = StyleSheet.create({
   container: {
@@ -98,40 +92,25 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     paddingBottom: 5,
   },
-  addWilayahButton: {
-    backgroundColor: '#40744E',
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    marginHorizontal: 20,
-    marginTop: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  addWilayahText: {
-    color: 'white',
-    fontSize: 13,
-  },
   body: {
     padding: 20,
   },
   card: {
-    backgroundColor: '#A5C8B6',
+    backgroundColor: '#C1DECF',
     padding: 15,
-    borderRadius: 15,
-    marginBottom: 10,
+    borderRadius: 8,
+    marginBottom: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   title: {
-    fontSize: 17,
     fontWeight: 'bold',
+    fontSize: 17,
     color: '#1A1A1A',
   },
-  info: {
-    fontSize: 11,
+  date: {
+    fontSize: 13,
     color: '#333',
     marginTop: 2,
   },
