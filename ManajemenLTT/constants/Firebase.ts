@@ -1,0 +1,1 @@
+export type TCollections = 'groups' | 'documents' | 'users';

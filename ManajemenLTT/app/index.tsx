@@ -1,9 +1,10 @@
 import { router } from 'expo-router';
 import React, { Component } from 'react';
 import {View,Text,TextInput,TouchableOpacity,StyleSheet,Image,SafeAreaView,} from 'react-native';
+import { authService, userService } from "@/services";
 
-class LoginScreen extends Component {
-  constructor(props) {
+class LoginScreen extends Component<{}, { email: string; password: string }> {
+  constructor(props: {}) {
     super(props);
     this.state = {
       email: '',
@@ -11,8 +12,20 @@ class LoginScreen extends Component {
     };
   }
 
-  handleLogin = () => {
-    router.replace('/Admin/dashboard'); //navigasi
+  handleLogin = async () => {
+    const { email, password } = this.state;
+    if (!email || !password) {
+      Alert.alert('Error', 'Email dan password tidak boleh kosong');
+      return;
+    }
+
+    try {
+      await loginUser(email, password);
+      router.replace('/Admin/dashboard');
+    } catch (error: any) {
+      Alert.alert('Login gagal', error.message);
+      console.error('Login error:', error);
+    }
   };
 
   render() {

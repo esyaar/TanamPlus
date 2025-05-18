@@ -2,7 +2,6 @@ import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-
 const firebaseConfig = {
     apiKey: "AIzaSyB00AME_kwvdgF4iPN8irtYfuvFXIb0WUo",
     authDomain: "manajemenltt-172dc.firebaseapp.com",
@@ -20,3 +19,5 @@ const app = initializeApp(firebaseConfig);
 // Inisialisasi layanan yang diperlukan
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+
+export default app;
