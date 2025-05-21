@@ -1,6 +1,23 @@
-// This is a shim for web and Android where the tab bar is generally opaque.
-export default undefined;
+import React from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
 
-export function useBottomTabOverflow() {
-  return 0;
-}
+const TabBarBackground = () => {
+  return (
+    <View style={styles.container} />
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+    backgroundColor: '#40744E',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+});
+
+export default TabBarBackground;

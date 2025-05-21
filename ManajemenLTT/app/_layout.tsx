@@ -9,7 +9,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    Lexend: require('../assets/fonts/Lexend.ttf'),
   });
 
   if (!loaded) {
@@ -19,12 +19,15 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack initialRouteName='index'>
+      <Stack initialRouteName='index'screenOptions={{ headerShown: false, animation: "none" }}>
         <Stack.Screen name="Penyuluh" options={{ headerShown: false }} />
-        <Stack.Screen name="index" />
-        <Stack.Screen name="+not-found" />
+        <Stack.Screen name="Admin" options={{ headerShown: false }} />
+        <Stack.Screen name="Kepala" options={{ headerShown: false }} />
+        <Stack.Screen name="+not-found" options={{ headerShown: false }} />
+        <Stack.Screen name="(subtabs)" options={{ headerShown: false }}  />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
   );
 }
+import 'react-native-reanimated';

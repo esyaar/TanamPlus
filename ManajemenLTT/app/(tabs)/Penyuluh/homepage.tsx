@@ -1,17 +1,38 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert  } from 'react-native';
 import { router } from 'expo-router';
+import LogoutModal from '@/components/ui/modalout'; 
 
-class Homepage extends Component {
+interface State {
+  modalVisible: boolean;
+}
+
+class Homepage extends Component<{}, State> {
+  [x: string]: any;
+  state: State = {
+    modalVisible: false,
+  };
+
   handleNavigate = () => {
-    router.replace('/Penyuluh/tambah');
+    router.replace('/(subtabs)/tambah');
+  };
+
+  openModal = () => {
+    this.setState({ modalVisible: true });
+  };
+
+  closeModal = () => {
+    this.setState({ modalVisible: false });
   };
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerText}>Home</Text>
+           <Text style={styles.headerText}>Home</Text>
+           <TouchableOpacity onPress={() => this.setState({ modalVisible: true })}>
+            <Image source={require('@/assets/ikon/OUT.png')} style={styles.out} />
+            </TouchableOpacity>
         </View>
 
         <View style={styles.body}>
@@ -42,31 +63,41 @@ class Homepage extends Component {
               <Text style={styles.buttonText}>Input Data</Text>
               </TouchableOpacity>
             </View>
-
         </View>
+
+          {/* Modal Logout */}
+          <LogoutModal
+          visible={this.state.modalVisible}
+          onClose={this.closeModal}
+          onConfirm={this.confirmLogout}
+          />
+          
       </View>
     );
   }
 }
 export default Homepage;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+    fontFamily: 'Lexend',
   },
   header: {
     backgroundColor: '#40744E',
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 30,
+    flexDirection: 'row',              
+    justifyContent: 'space-between',  
+    alignItems: 'center',              
   },
   headerText: {
     color: '#fff',
     fontFamily: 'Lexend',
     fontSize: 25,
     fontWeight: 'bold',
-    paddingLeft:10,
-    paddingBottom:5,
   },
   body: {
     padding: 20,
@@ -96,6 +127,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   riwayatText: {
+    fontFamily: 'Lexend',
     marginLeft: 10,
     flex: 1,
   },
@@ -110,6 +142,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  out:{
+    width: 40,
+    height: 40,
+    marginRight:10,
   },
   image: {
     width: 40,
@@ -146,4 +183,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: 'Lexend',
   },
+  cardContent:{
+  },
+  textContainer:{
+  },
+
 });

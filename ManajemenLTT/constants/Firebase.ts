@@ -1,1 +1,1 @@
-export type TCollections = 'groups' | 'documents' | 'users';
+export type TCollections = 'dataltt' | 'users' | 'wilayah';

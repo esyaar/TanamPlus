@@ -1,9 +1,22 @@
 import React, { Component } from 'react';
-import {View,Text,TextInput,TouchableOpacity,StyleSheet,KeyboardAvoidingView,Platform,ScrollView,TouchableWithoutFeedback,Keyboard} from 'react-native';
-import { router } from 'expo-router';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { addLtt } from '@/services/dataService';
+
+export interface CreateLttData {
+  wilayah_id: string;
+  bpp: string;
+  tanggalLaporan: Date;
+  kecamatan: string;
+  kelurahan: string;
+  komoditas: string;
+  jenisLahan: string;
+  luasTambahTanam: number;
+}
 
 type State = {
   kecamatan: string;
@@ -16,7 +29,7 @@ type State = {
   luasTambahTanam: string;
 };
 
-class EditLTTForm extends Component<{}, State> {
+class InputLTTForm extends Component<{}, State> {
   state: State = {
     kecamatan: '',
     kelurahan: '',
@@ -28,7 +41,7 @@ class EditLTTForm extends Component<{}, State> {
     luasTambahTanam: '',
   };
 
-  handleSubmit = () => {
+  handleSubmit = async () => {
     const {
       kecamatan,
       kelurahan,
@@ -36,18 +49,58 @@ class EditLTTForm extends Component<{}, State> {
       tanggalLaporan,
       komoditas,
       jenisLahan,
-      luasTambahTanam
+      luasTambahTanam,
     } = this.state;
 
-    console.log({
-      kecamatan,
-      kelurahan,
+    if (
+      !kecamatan ||
+      !kelurahan ||
+      !bpp ||
+      !komoditas ||
+      !jenisLahan ||
+      !luasTambahTanam
+    ) {
+      Alert.alert('Validasi', 'Mohon lengkapi semua data sebelum mengirim.');
+      return;
+    }
+
+    const payload: CreateLttData = {
+      wilayah_id: kecamatan,
       bpp,
       tanggalLaporan,
+      kecamatan,
+      kelurahan,
       komoditas,
       jenisLahan,
-      luasTambahTanam,
-    });
+      luasTambahTanam: parseFloat(luasTambahTanam),
+    };
+
+    try {
+      const newId = await addLtt(payload);
+      console.log('Data LTT berhasil ditambahkan dengan ID:', newId);
+      Alert.alert('Sukses', 'Data berhasil ditambahkan!');
+
+      // Reset form
+      this.setState({
+        kecamatan: '',
+        kelurahan: '',
+        bpp: '',
+        tanggalLaporan: new Date(),
+        komoditas: '',
+        jenisLahan: '',
+        luasTambahTanam: '',
+      });
+
+      // Navigate back
+      router.replace('/(tabs)/Penyuluh/homepage');
+    } catch (error) {
+      console.error('Gagal menambahkan data LTT:', error);
+      Alert.alert('Error', 'Gagal menambahkan data. Silakan coba lagi nanti.');
+    }
+  };
+
+  handleNavigate = () => {
+    router.replace('/(tabs)/Penyuluh/homepage');
   };
 
   render() {
@@ -59,7 +112,7 @@ class EditLTTForm extends Component<{}, State> {
       showDatePicker,
       komoditas,
       jenisLahan,
-      luasTambahTanam
+      luasTambahTanam,
     } = this.state;
 
     return (
@@ -71,10 +124,10 @@ class EditLTTForm extends Component<{}, State> {
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
             <View style={styles.container}>
               <View style={styles.header}>
-                <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+                <TouchableOpacity style={styles.button} onPress={this.handleNavigate}>
                   <Ionicons name="chevron-back" size={24} color="white" />
                 </TouchableOpacity>
-                <Text style={styles.headerText}>Edit Data Luas Tambah Tanam</Text>
+                <Text style={styles.headerText}>Input Data Luas Tambah Tanam</Text>
               </View>
 
               <Text style={styles.sectionTitle}>Wilayah Kerja</Text>
@@ -99,8 +152,41 @@ class EditLTTForm extends Component<{}, State> {
                   onValueChange={(value) => this.setState({ kelurahan: value })}
                 >
                   <Picker.Item label="Kelurahan" value="" />
-                  <Picker.Item label="Besemah" value="A" />
-                  <Picker.Item label="Ayek Pacar" value="B" />
+                  <Picker.Item label="Agung Lawongan" value="Agung Lawongan" />
+                  <Picker.Item label="Alun Dua" value="Alun Dua" />
+                  <Picker.Item label="Atung Bungsu" value="Atung Bungsu" />
+                  <Picker.Item label="Bangun Jaya" value="Bangun Jaya" />
+                  <Picker.Item label="Bangun Rejo" value="Bangun Rejo" />
+                  <Picker.Item label="Beringin Jaya" value="Beringin Jaya" />
+                  <Picker.Item label="Besemah Serasan" value="Besemah Serasan" />
+                  <Picker.Item label="Bumi Agung" value="Bumi Agung" />
+                  <Picker.Item label="Burung Dinang" value="Burung Dinang" />
+                  <Picker.Item label="Candi Jaya" value="Candi Jaya" />
+                  <Picker.Item label="Curup Jare" value="Curup Jare" />
+                  <Picker.Item label="Dempio Makmur" value="Dempio Makmur" />
+                  <Picker.Item label="Gunung Dempo" value="Gunung Dempo" />
+                  <Picker.Item label="Jangkar Mas" value="Jangkar Mas" />
+                  <Picker.Item label="Jokoh" value="Jokoh" />
+                  <Picker.Item label="Kance Diwe" value="Kance Diwe" />
+                  <Picker.Item label="Karang Dalo" value="Karang Dalo" />
+                  <Picker.Item label="Kusipan Babas" value="Kusipan Babas" />
+                  <Picker.Item label="Lubuk Buntak" value="Lubuk Buntak" />
+                  <Picker.Item label="Muara Siban" value="Muara Siban" />
+                  <Picker.Item label="Nendagung" value="Nendagung" />
+                  <Picker.Item label="Padang Temu" value="Padang Temu" />
+                  <Picker.Item label="Pagar Wangi" value="Pagar Wangi" />
+                  <Picker.Item label="Pagaralam" value="Pagaralam" />
+                  <Picker.Item label="Pelang Kenidai" value="Pelang Kenidai" />
+                  <Picker.Item label="Penjalang" value="Penjalang" />
+                  <Picker.Item label="Prabu Dipo" value="Prabu Dipo" />
+                  <Picker.Item label="Reba Tinggi" value="Reba Tinggi" />
+                  <Picker.Item label="Selibar" value="Selibar" />
+                  <Picker.Item label="Sidorejo" value="Sidorejo" />
+                  <Picker.Item label="Sukorejo" value="Sukorejo" />
+                  <Picker.Item label="Tanjung Payang" value="Tanjung Payang" />
+                  <Picker.Item label="Tebat Giri Indah" value="Tebat Giri Indah" />
+                  <Picker.Item label="Tumbak Ulas" value="Tumbak Ulas" />
+                  <Picker.Item label="Ulu Rurah" value="Ulu Rurah" />
                 </Picker>
               </View>
 
@@ -127,9 +213,7 @@ class EditLTTForm extends Component<{}, State> {
                   display="default"
                   onChange={(event, date) => {
                     this.setState({ showDatePicker: false });
-                    if (date) {
-                      this.setState({ tanggalLaporan: date });
-                    }
+                    if (date) this.setState({ tanggalLaporan: date });
                   }}
                 />
               )}
@@ -142,10 +226,10 @@ class EditLTTForm extends Component<{}, State> {
                   <Picker.Item label="Jenis Komoditas Pangan" value="" />
                   <Picker.Item label="Jagung" value="Jagung" />
                   <Picker.Item label="Kedelai" value="Kedelai" />
-                  <Picker.Item label="Kacang Tanah" value="Kacang_Tanah" />
-                  <Picker.Item label="Kacang Hijau" value="Kacang_Hijau" />
+                  <Picker.Item label="Kacang Tanah" value="Kacang Tanah" />
+                  <Picker.Item label="Kacang Hijau" value="Kacang Hijau" />
                   <Picker.Item label="Singkong" value="Singkong" />
-                  <Picker.Item label="Ubi Jalar" value="Ubi_Jalar" />
+                  <Picker.Item label="Ubi Jalar" value="Ubi Jalar" />
                   <Picker.Item label="Sorgum" value="Sorgum" />
                   <Picker.Item label="Gandum" value="Gandum" />
                   <Picker.Item label="Talas" value="Talas" />
@@ -182,7 +266,6 @@ class EditLTTForm extends Component<{}, State> {
     );
   }
 }
-export default EditLTTForm;
 
 const styles = StyleSheet.create({
   container: {
@@ -198,16 +281,16 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginBottom: 20,
-    flexDirection: 'row',      
+    flexDirection: 'row',
     alignItems: 'center',
   },
   headerText: {
-    marginLeft: 5, 
+    marginLeft: 5,
     color: '#fff',
     fontWeight: 'bold',
   },
   button: {
-    marginRight:10,
+    marginRight: 10,
   },
   sectionTitle: {
     paddingLeft: 10,
@@ -220,8 +303,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignContent: 'center',
     marginBottom: 7,
-    width: '345',
-    height:'50',
+    width: 345,
+    height: 50,
   },
   inputBox2: {
     backgroundColor: '#9FC2A8',
@@ -229,20 +312,20 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     paddingLeft: 20,
     marginBottom: 7,
-    width: '345',
-    height:'50',
+    width: 345,
+    height: 50,
   },
   date: {
     backgroundColor: '#9FC2A8',
     borderRadius: 10,
     alignContent: 'center',
     marginBottom: 7,
-    width: '345',
-    height:'50',
+    width: 345,
+    height: 50,
   },
   datetext: {
     paddingLeft: 20,
-    paddingTop:15, 
+    paddingTop: 15,
   },
   submitButton: {
     backgroundColor: '#40744E',
@@ -258,3 +341,4 @@ const styles = StyleSheet.create({
   },
 });
 
+export default InputLTTForm;
