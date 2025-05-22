@@ -58,7 +58,7 @@ class RiwayatItem extends Component<RiwayatItemProps> {
 }
 
 class History extends Component<{}, State> {
-  unsubscribe: () => void;
+  unsubscribe: (() => void) | undefined;
 
   state: State = {
     modalVisible: false,
@@ -91,7 +91,7 @@ class History extends Component<{}, State> {
 
   confirmLogout = () => {
     this.closeModal();
-    router.replace('/login');
+    router.replace('./index');
   };
 
   openModal = () => this.setState({ modalVisible: true });
@@ -124,7 +124,12 @@ class History extends Component<{}, State> {
           data={this.state.data}
           keyExtractor={(item) => item.id}
           renderItem={this.renderItem}
-          ListEmptyComponent={<Text style={styles.emptyText}>Belum ada data.</Text>}
+          ListEmptyComponent={
+          <View style={styles.nodata}>
+          <Image source={require('@/assets/images/kosong.png')} style={styles.kosong}/>
+          <Text style={styles.emptyText}>Belum ada data.</Text>
+          </View>
+        }
         />
 
         <LogoutModal
@@ -169,8 +174,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 50,
-    color: '#666',
+    marginTop: 10,
+    fontFamily: 'Lexend',
+    color: '#a1a1a',
   },
   card: {
     backgroundColor: '#C1DECF',
@@ -198,4 +204,12 @@ const styles = StyleSheet.create({
   iconButton: {
     paddingHorizontal: 6,
   },
+  kosong:{
+    width: 80,
+    height: 80,
+    marginTop:200,
+  },
+  nodata:{
+    alignItems:'center',
+  }
 });

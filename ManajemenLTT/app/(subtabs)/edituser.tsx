@@ -122,7 +122,10 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'space-between',
-    padding: 20,
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingBottom: 20,
+    paddingTop: 60,
     backgroundColor: '#fff',
   },
   inner: {
@@ -170,7 +173,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: 300,
   },
   submitText: {
     color: '#fff',

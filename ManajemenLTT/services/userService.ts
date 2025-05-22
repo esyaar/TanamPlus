@@ -5,23 +5,27 @@ import {
   addDoc,
   updateDoc,
   deleteDoc,
-  getDoc
+  getDoc,
+  onSnapshot,
+  query,
+  orderBy
 } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createHashSHA1 } from '@/utils/generator'; // pastikan path ini sesuai struktur kamu
+import { createHashSHA1 } from '@/utils/generator'; 
 
 export interface UserData {
+  id?: string;
   name: string;
   email: string;
   username: string;
   password: string;
-  role: 'admin' | 'penyuluh' | 'kepalaBPP';
+  role: 'admin' | 'penyuluh' | 'kepalabpp';
   createdAt?: string;
   updatedAt?: string;
 }
 
 // Type untuk membuat user baru (tanpa updatedAt)
-export type CreateUserProfileData = Omit<UserData, 'id' | 'updatedAt'>;
+export type CreateUserProfileData = Omit<UserData, 'id' | 'createdAt' | 'updatedAt'>;
 
 // Type untuk update user (tanpa id dan createdAt)
 export type UpdateUserProfileData = Partial<Omit<UserData, 'id' | 'createdAt'>>;
@@ -34,6 +38,7 @@ export const addUser = async (data: CreateUserProfileData) => {
       ...data,
       password: hashedPassword,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     const docRef = await addDoc(collection(db, 'users'), userData);
@@ -42,6 +47,30 @@ export const addUser = async (data: CreateUserProfileData) => {
     console.error('Gagal menambahkan user:', error);
     throw error;
   }
+};
+
+export const getUserData = (callback: (items: UserData[]) => void) => {
+  const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+
+  const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const items: UserData[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      items.push({
+        id: doc.id,
+        email: data.email,
+        name: data.name,
+        password: data.password,
+        role: data.role,
+        username: data.username,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+      });
+    });
+    callback(items);
+  });
+
+  return unsubscribe;
 };
 
 export const editUserById = async (id: string, data: UpdateUserProfileData) => {

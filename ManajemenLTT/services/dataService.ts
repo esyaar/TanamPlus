@@ -10,6 +10,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  getDocs
 } from 'firebase/firestore';
 
 export interface LttData {
@@ -58,7 +59,7 @@ export const getLttData = (callback: (items: LttData[]) => void) => {
         id: doc.id,
         wilayah_id: data.wilayah_id,
         bpp: data.bpp,
-        tanggalLaporan: data.tanggalLaporan.toDate(), // convert Timestamp ke Date
+        tanggalLaporan: data.tanggalLaporan.toDate(),
         kecamatan: data.kecamatan,
         kelurahan: data.kelurahan,
         komoditas: data.komoditas,
@@ -82,3 +83,26 @@ export const deleteLttData = async (id: string) => {
     throw error;
   }
 };
+
+export const fetchLTTByKomoditas = async (komoditas: string) => {
+  const snapshot = await getDocs(collection(db, 'ltt'));
+  const map: Record<string, number> = {};
+
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data.komoditas === komoditas) {
+      map[data.kecamatan] = (map[data.kecamatan] || 0) + (data.luasTambahTanam || 0);
+    }
+  });
+
+  const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFA500', '#800080'];
+  const chartData = Object.entries(map).map(([kec, val], i) => ({
+    name: kec,
+    value: val,
+    color: colors[i % colors.length],
+  }));
+
+  return chartData;
+};
+
+export { db };

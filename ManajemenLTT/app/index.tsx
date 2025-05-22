@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  SafeAreaView,
   Alert,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
@@ -41,7 +40,7 @@ export default class LoginScreen extends Component<{}, State> {
       case 'penyuluh':
         router.replace('/Penyuluh/homepage');
         break;
-      case 'kepalaBPP':
+      case 'kepalabpp':
         router.replace('/Admin/dashboard');
         break;
       default:

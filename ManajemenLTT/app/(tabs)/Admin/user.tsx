@@ -1,4 +1,3 @@
-// app/(auth)/admin/user.tsx
 import React, { Component } from 'react';
 import {
   View,
@@ -8,6 +7,7 @@ import {
   Alert,
   ScrollView,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { router } from 'expo-router';
 import {
@@ -22,6 +22,7 @@ import {
   UserData,
   getCurrentUser,
 } from '@/services/userService';
+import LogoutModal from '@/components/ui/modalout';
 
 interface UserItemProps {
   id: string;
@@ -67,12 +68,12 @@ class UserItem extends Component<UserItemProps> {
   }
 }
 
-interface UserState {
-  users: UserData[];
-}
+export default class UserList extends Component<{}, {}> {
+  state = {
+    users: [] as UserData[],
+    modalVisible: false,
+  };
 
-export default class UserList extends Component<{}, UserState> {
-  state: UserState = { users: [] };
   unsubscribe: (() => void) | null = null;
 
   componentDidMount() {
@@ -117,11 +118,30 @@ export default class UserList extends Component<{}, UserState> {
     router.push('/(subtabs)/tambahuser');
   };
 
+  openModal = () => {
+    this.setState({ modalVisible: true });
+  };
+
+  closeModal = () => {
+    this.setState({ modalVisible: false });
+  };
+
+  confirmLogout = () => {
+    router.replace('/login');
+    this.setState({ modalVisible: false });
+  };
+
   render() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerText}>Data User</Text>
+          <TouchableOpacity onPress={this.openModal}>
+            <Image
+              source={require('@/assets/ikon/OUT.png')}
+              style={styles.out}
+            />
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
@@ -144,24 +164,42 @@ export default class UserList extends Component<{}, UserState> {
             />
           ))}
         </ScrollView>
+
+        <LogoutModal
+          visible={this.state.modalVisible}
+          onClose={this.closeModal}
+          onConfirm={this.confirmLogout}
+        />
       </SafeAreaView>
     );
   }
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+    fontFamily: 'Lexend',
+  },
   header: {
     backgroundColor: '#40744E',
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 30,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerText: {
     color: '#fff',
     fontFamily: 'Lexend',
     fontSize: 25,
     fontWeight: 'bold',
+  },
+  out: {
+    width: 40,
+    height: 40,
+    marginRight: 10,
   },
   addUserButton: {
     backgroundColor: '#40744E',

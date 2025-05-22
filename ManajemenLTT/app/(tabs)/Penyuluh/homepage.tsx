@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert  } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image  } from 'react-native';
 import { router } from 'expo-router';
 import LogoutModal from '@/components/ui/modalout'; 
 

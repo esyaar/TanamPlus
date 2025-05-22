@@ -9,11 +9,21 @@ import {
   Platform,
   ScrollView,
   TouchableWithoutFeedback,
-  Keyboard
+  Keyboard,
+  Alert
 } from 'react-native';
 import { router } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
+import { addUser } from '@/services/userService';
+
+export interface CreateUserProfileData {
+  name: string;
+  email: string;
+  username: string;
+  password: string;
+  role: string;
+}
 
 type State = {
   name: string;
@@ -32,18 +42,47 @@ class AddUser extends Component<{}, State> {
     role: '',
   };
 
-  handleSubmit = () => {
+  handleSubmit = async () => {
     const { name, email, username, password, role } = this.state;
 
-    console.log({
+      if (
+        !name ||
+        !email ||
+        !username ||
+        !password ||
+        !role
+      ) {
+        Alert.alert('Validasi', 'Mohon lengkapi semua data sebelum mengirim.');
+        return;
+      }
+
+    const payload: CreateUserProfileData = {
       name,
       email,
       username,
       password,
       role,
-    });
+    };
 
-    router.replace('/Admin/user');
+    try {
+      const newId = await addUser(payload);
+      console.log('Data LTT berhasil ditambahkan dengan ID:', newId);
+      Alert.alert('Sukses', 'Data berhasil ditambahkan!'); 
+      
+
+      this.setState({
+        name: '',
+        email: '',
+        username: '',
+        password: '',
+        role: '',
+      });
+      router.replace('/Admin/user');
+  }
+  catch (error) {
+  console.error('Gagal menambahkan data user:', error);
+   Alert.alert('Error', 'Gagal menambahkan data. Silakan coba lagi nanti.');
+   }
   };
 
   render() {
@@ -122,7 +161,10 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'space-between',
-    padding: 20,
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingBottom: 20,
+    paddingTop: 60,
     backgroundColor: '#fff',
   },
   inner: {
@@ -170,7 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: 300,
   },
   submitText: {
     color: '#fff',
