@@ -10,13 +10,6 @@ import { MaterialCommunityIcons, Octicons, } from '@expo/vector-icons';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    Lexend: require('@/assets/fonts/Lexend.ttf'),
-  });
-
-  if (!loaded) {
-    return null;
-  }
 
   return (
     <Tabs 

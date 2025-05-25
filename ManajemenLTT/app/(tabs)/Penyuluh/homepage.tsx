@@ -29,7 +29,7 @@ class Homepage extends Component<{}, State> {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-           <Text style={styles.headerText}>Home</Text>
+           <Text style={styles.headerText }>Home</Text>
            <TouchableOpacity onPress={() => this.setState({ modalVisible: true })}>
             <Image source={require('@/assets/ikon/OUT.png')} style={styles.out} />
             </TouchableOpacity>
@@ -82,7 +82,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    fontFamily: 'Lexend',
   },
   header: {
     backgroundColor: '#40744E',
@@ -95,24 +94,23 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: '#fff',
-    fontFamily: 'Lexend',
+    fontFamily: 'Lexend4',
     fontSize: 25,
-    fontWeight: 'bold',
+
   },
   body: {
     padding: 20,
   },
   welcome: {
     fontSize: 22,
-    fontFamily: 'Lexend',
-    fontWeight: 'bold',
+    fontFamily: 'Lexend4',
     color: '#1A1A1A',
     paddingTop: 5,
     paddingLeft:10,
   },
   subtitle: {
     fontSize: 14,
-    fontFamily: 'Lexend',
+    fontFamily: 'Lexend3',
     color: '#1A1A1A',
     marginBottom: 20,
     paddingLeft:10,
@@ -154,34 +152,35 @@ const styles = StyleSheet.create({
     marginRight:10,
   },
   cardTitle: {
-    fontWeight: 'bold',
     fontSize: 17,
-    fontFamily: 'Lexend',
+    fontFamily: 'Lexend4',
     color: '#1A1A1A',
   },
   cardSubtitle: {
     fontSize: 13,
-    fontFamily: 'Lexend',
+    marginBottom:10,
+    fontFamily: 'Lexend3',
     color: '#1A1A1A',
   },
   cardText: {
     fontSize: 13,
-    fontFamily: 'Lexend',
+    fontFamily: 'Lexend2',
     color: '#1A1A1A',
   },
   button: {
     backgroundColor: '#40744E',
     borderRadius: 8,
     marginTop: 15,
-    alignItems: 'center',
-    width: 150,
-    height: 30,
+    marginLeft:110,
+    width: 160,
+    height: 35,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 15,
-    fontWeight: 'bold',
-    fontFamily: 'Lexend',
+    fontSize: 13,
+    textAlign:'center',
+    margin:'auto',
+    fontFamily: 'Lexend4',
   },
   cardContent:{
   },

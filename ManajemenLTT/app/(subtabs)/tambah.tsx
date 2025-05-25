@@ -133,18 +133,19 @@ class InputLTTForm extends Component<{}, State> {
               <Text style={styles.sectionTitle}>Wilayah Kerja</Text>
 
               <View style={styles.inputBox}>
-                <Picker
-                  selectedValue={kecamatan}
-                  onValueChange={(value) => this.setState({ kecamatan: value })}
-                >
-                  <Picker.Item label="Kecamatan" value="" />
-                  <Picker.Item label="Dempo Selatan" value="dempo_selatan" />
-                  <Picker.Item label="Dempo Tengah" value="dempo_tengah" />
-                  <Picker.Item label="Dempo Utara" value="dempo_utara" />
-                  <Picker.Item label="Pagar Alam Selatan" value="pagar_alam_selatan" />
-                  <Picker.Item label="Pagar Alam Utara" value="pagar_alam_utara" />
-                </Picker>
-              </View>
+              <Picker
+                selectedValue={kecamatan}
+                onValueChange={(value) => this.setState({ kecamatan: value })}
+                itemStyle={{ fontFamily: 'Lexend3', fontSize: 13 }}
+              >
+                <Picker.Item label="Kecamatan" value="" />
+                  <Picker.Item label="Dempo Selatan" value="Dempo Selatan" />
+                  <Picker.Item label="Dempo Tengah" value="Dempo Tengah" />
+                  <Picker.Item label="Dempo Utara" value="Dempo Utara" />
+                  <Picker.Item label="Pagar Alam Selatan" value="Pagar Alam Selatan" />
+                  <Picker.Item label="Pagar Alam Utara" value="Pagar Alam Utara" />
+              </Picker>
+            </View>
 
               <View style={styles.inputBox}>
                 <Picker
@@ -163,7 +164,7 @@ class InputLTTForm extends Component<{}, State> {
                   <Picker.Item label="Burung Dinang" value="Burung Dinang" />
                   <Picker.Item label="Candi Jaya" value="Candi Jaya" />
                   <Picker.Item label="Curup Jare" value="Curup Jare" />
-                  <Picker.Item label="Dempio Makmur" value="Dempio Makmur" />
+                  <Picker.Item label="Dempo Makmur" value="Dempo Makmur" />
                   <Picker.Item label="Gunung Dempo" value="Gunung Dempo" />
                   <Picker.Item label="Jangkar Mas" value="Jangkar Mas" />
                   <Picker.Item label="Jokoh" value="Jokoh" />
@@ -224,6 +225,7 @@ class InputLTTForm extends Component<{}, State> {
                   onValueChange={(value) => this.setState({ komoditas: value })}
                 >
                   <Picker.Item label="Jenis Komoditas Pangan" value="" />
+                  <Picker.Item label="Padi" value="Padi" />
                   <Picker.Item label="Jagung" value="Jagung" />
                   <Picker.Item label="Kedelai" value="Kedelai" />
                   <Picker.Item label="Kacang Tanah" value="Kacang Tanah" />
@@ -287,14 +289,16 @@ const styles = StyleSheet.create({
   headerText: {
     marginLeft: 5,
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Lexend4',
+    fontSize: 13,
   },
   button: {
     marginRight: 10,
   },
   sectionTitle: {
     paddingLeft: 10,
-    fontWeight: 'bold',
+    fontFamily: 'Lexend4',
+    fontSize: 13,
     marginBottom: 15,
     marginTop: 15,
   },
@@ -305,6 +309,8 @@ const styles = StyleSheet.create({
     marginBottom: 7,
     width: 345,
     height: 50,
+    fontFamily: 'Lexend3',
+    fontSize: 13,
   },
   inputBox2: {
     backgroundColor: '#9FC2A8',
@@ -314,6 +320,8 @@ const styles = StyleSheet.create({
     marginBottom: 7,
     width: 345,
     height: 50,
+    fontFamily: 'Lexend3',
+    fontSize: 13,
   },
   date: {
     backgroundColor: '#9FC2A8',
@@ -332,11 +340,12 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 30,
+    marginTop: 90,
   },
   submitText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Lexend4',
+
     fontSize: 16,
   },
 });

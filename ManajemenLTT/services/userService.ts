@@ -8,7 +8,8 @@ import {
   getDoc,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
+  where
 } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createHashSHA1 } from '@/utils/generator'; 
@@ -87,7 +88,7 @@ export const editUserById = async (id: string, data: UpdateUserProfileData) => {
     const userRef = doc(db, 'users', id);
     await updateDoc(userRef, updatedData);
   } catch (error) {
-    console.error(`Gagal mengedit user dengan ID ${id}:`, error);
+    console.error(`Gagal melakukan perubahan data ${id}:`, error);
     throw error;
   }
 };
@@ -101,7 +102,7 @@ export const deleteUserById = async (id: string) => {
     throw error;
   }
 };
-
+//halaman riwayta
 export const getUserById = async (id: string): Promise<UserData> => {
   try {
     const userRef = doc(db, 'users', id);
@@ -115,6 +116,20 @@ export const getUserById = async (id: string): Promise<UserData> => {
     console.error(`Gagal mengambil data user dengan ID ${id}:`, error);
     throw error;
   }
+};
+//halaman wilayah
+export const getUsersByRole = (role: string, callback: (users: UserData[]) => void) => {
+  const q = query(collection(db, 'users'), where('role', '==', role));
+
+  const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const users: UserData[] = [];
+    querySnapshot.forEach((doc) => {
+      users.push({ id: doc.id, ...(doc.data() as UserData) });
+    });
+    callback(users);
+  });
+
+  return unsubscribe;
 };
 
 export const getCurrentUser = async (): Promise<UserData | null> => {

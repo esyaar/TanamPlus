@@ -119,7 +119,7 @@ class History extends Component<{}, State> {
           </TouchableOpacity>
         </View>
 
-        <FlatList
+        <FlatList //muncul jika data tidak ada
           contentContainerStyle={styles.body}
           data={this.state.data}
           keyExtractor={(item) => item.id}
@@ -127,7 +127,7 @@ class History extends Component<{}, State> {
           ListEmptyComponent={
           <View style={styles.nodata}>
           <Image source={require('@/assets/images/kosong.png')} style={styles.kosong}/>
-          <Text style={styles.emptyText}>Belum ada data.</Text>
+          <Text style={styles.emptyText}>Belum ada data :(</Text>
           </View>
         }
         />
@@ -160,9 +160,8 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: '#fff',
-    fontFamily: 'Lexend',
+    fontFamily: 'Lexend4',
     fontSize: 25,
-    fontWeight: 'bold',
   },
   out: {
     width: 40,
@@ -175,27 +174,28 @@ const styles = StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     marginTop: 10,
-    fontFamily: 'Lexend',
+    fontFamily: 'Lexend2',
     color: '#a1a1a',
   },
   card: {
     backgroundColor: '#C1DECF',
     padding: 15,
-    borderRadius: 8,
-    marginBottom: 15,
+    borderRadius: 13,
+    marginBottom: 7,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   title: {
-    fontWeight: 'bold',
     fontSize: 17,
     color: '#1A1A1A',
+    fontFamily: 'Lexend4',
   },
   date: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#333',
     marginTop: 2,
+    fontFamily: 'Lexend3',
   },
   icons: {
     flexDirection: 'row',

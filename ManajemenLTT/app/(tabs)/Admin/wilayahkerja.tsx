@@ -1,10 +1,31 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Image } from 'react-native';
+import { 
+  View,
+  Text, 
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity, 
+  Alert, 
+  Image 
+} from 'react-native';
 import { router } from 'expo-router';
 import { Feather, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import LogoutModal from '@/components/ui/modalout';
+import { db } from '@/services/firebaseConfig';
+import { collection, onSnapshot } from 'firebase/firestore';
+import {
+  deleteWilayah,
+  WilayahData,
+  getwWilayahId,
+} from '@/services/wilayahService';
+
+interface State {
+  wilayah: WilayahData[];
+  modalVisible: boolean;
+}
 
 type WilayahItemProps = {
+  id: string;
   kelurahan: string;
   kecamatan: string;
   onDelete: () => void;
@@ -44,15 +65,34 @@ class WilayahItem extends Component<WilayahItemProps> {
   }
 }
 
-interface State {
-  modalVisible: boolean;
-}
-
-class Wilayah extends Component<{}, State> {
-  [x: string]: any;
-  state: State = {
+export default class Wilayah extends  Component<{}, {}> {
+  state = {
+    wilayah: [],
     modalVisible: false,
   };
+
+  unsubscribe: (() => void) | null = null;
+
+  componentDidMount() {
+    const wilayahCollection = collection(db, 'wilayah');
+    this.unsubscribe = onSnapshot(
+      wilayahCollection,
+      (snapshot) => {
+        const wilayahData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<WilayahData, 'id'>),
+        }));
+        this.setState({ wilayah: wilayahData });
+      },
+      (error) => {
+        console.error('Gagal memuat data wilayah:', error);
+      }
+    );
+  }
+
+  componentWillUnmount() {
+    this.unsubscribe?.();
+  }
 
   openModal = () => {
     this.setState({ modalVisible: true });
@@ -62,16 +102,30 @@ class Wilayah extends Component<{}, State> {
     this.setState({ modalVisible: false });
   };
 
-  handleDelete = () => {
-    console.log('Hapus data');
+  handleDelete = async (id: string) => {
+    try {
+      await deleteWilayah(id);
+      Alert.alert('Sukses', 'Wilayah berhasil dihapus');
+    } catch (error) {
+      console.error('Gagal menghapus Wilayah:', error);
+      Alert.alert('Error', 'Gagal menghapus Wilayah');
+    }
   };
 
-  handleEdit = () => {
-    router.push('/(subtabs)/editwilayah');
+  handleEdit = (wilayah: WilayahData) => {
+    router.push({
+      pathname: '/(subtabs)/editwilayah',
+      params: { id: wilayah.id },
+    });
   };
 
-  handleAddUser = () => {
+  handleAddWilayah = () => {
     router.push('/(subtabs)/tambahwilayah');
+  };
+
+  confirmLogout = () => {
+    router.replace('./index');
+    this.setState({ modalVisible: false });
   };
 
   render() {
@@ -79,22 +133,29 @@ class Wilayah extends Component<{}, State> {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerText}>Wilayah Kerja</Text>
-            <TouchableOpacity onPress={() => this.setState({ modalVisible: true })}>
+            <TouchableOpacity onPress={this.openModal}>
             <Image source={require('@/assets/ikon/OUT.png')} style={styles.out} />
             </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.addWilayahButton} onPress={this.handleAddUser}>
+        <TouchableOpacity style={styles.addWilayahButton} onPress={this.handleAddWilayah}>
           <Text style={styles.addWilayahText}>Tambah Wilayah Kerja</Text>
           <MaterialCommunityIcons name="plus" size={24} color="white" />
         </TouchableOpacity>
 
-        <View style={styles.body}>
-          <WilayahItem kelurahan="Bangun Rejo" kecamatan="Kecamatan Pagaralam Utara" onDelete={this.handleDelete} onEdit={this.handleEdit} />
-          <WilayahItem kelurahan="Beringin Jaya" kecamatan="Kecamatan Pagaralam Utara" onDelete={this.handleDelete} onEdit={this.handleEdit} />
-        </View>
+        <ScrollView contentContainerStyle={styles.body}>
+          {this.state.wilayah.map((wilayah) => (
+            <WilayahItem
+              key={wilayah.id}
+              id={wilayah.id}
+              kelurahan={wilayah.kelurahan}
+              kecamatan={wilayah.kecamatan}
+              onDelete={() => this.handleDelete(wilayah.id)}
+              onEdit={() => this.handleEdit(wilayah)}
+            />
+          ))}
+        </ScrollView>
 
-          {/* Modal Logout */}
           <LogoutModal
           visible={this.state.modalVisible}
           onClose={this.closeModal}
@@ -105,13 +166,11 @@ class Wilayah extends Component<{}, State> {
   }
 }
 
-export default Wilayah;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    fontFamily: 'Lexend',
   },
   header: {
     backgroundColor: '#40744E',
@@ -124,14 +183,12 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: '#fff',
-    fontFamily: 'Lexend',
+    fontFamily: 'Lexend4',
     fontSize: 25,
-    fontWeight: 'bold',
   },
   out:{
     width: 40,
     height: 40,
-    marginRight:10,
   },
   addWilayahButton: {
     backgroundColor: '#40744E',
@@ -147,6 +204,7 @@ const styles = StyleSheet.create({
   addWilayahText: {
     color: 'white',
     fontSize: 13,
+    fontFamily: 'Lexend4',
   },
   body: {
     padding: 20,
@@ -162,13 +220,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 17,
-    fontWeight: 'bold',
+    fontFamily: 'Lexend4',
     color: '#1A1A1A',
   },
   info: {
     fontSize: 11,
     color: '#333',
     marginTop: 2,
+    fontFamily: 'Lexend3',
   },
   icons: {
     flexDirection: 'row',

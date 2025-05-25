@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
-import { logoutUser } from '@/services/authService'; // pastikan path sesuai
-
+import { logoutUser } from '@/services/authService';
 interface Props {
   visible: boolean;
   onClose: () => void;
+  onConfirm: () => void;
 }
 
 export default class LogoutModal extends Component<Props> {
@@ -68,13 +68,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
     marginBottom: 10,
+    fontFamily: 'Lexend4',
   },
   message: {
     fontSize: 14,
     marginBottom: 20,
     textAlign: 'center',
+    fontFamily: 'Lexend2',
   },
   buttons: {
     flexDirection: 'row',
@@ -99,9 +100,10 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     color: '#000',
+    fontFamily: 'Lexend2',
   },
   confirmText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Lexend2',
   },
 });

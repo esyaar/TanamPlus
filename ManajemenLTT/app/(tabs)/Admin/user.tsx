@@ -26,7 +26,7 @@ import LogoutModal from '@/components/ui/modalout';
 
 interface UserItemProps {
   id: string;
-  username: string;
+  name: string;
   role: string;
   onDelete: () => void;
   onEdit: () => void;
@@ -45,11 +45,11 @@ class UserItem extends Component<UserItemProps> {
   };
 
   render() {
-    const { username, role, onEdit } = this.props;
+    const { name, role, onEdit } = this.props;
     return (
       <View style={styles.card}>
         <View>
-          <Text style={styles.title}>{username}</Text>
+          <Text style={styles.title}>{name}</Text>
           <Text style={styles.info}>{role}</Text>
         </View>
         <View style={styles.icons}>
@@ -127,7 +127,7 @@ export default class UserList extends Component<{}, {}> {
   };
 
   confirmLogout = () => {
-    router.replace('/login');
+    router.replace('./index');
     this.setState({ modalVisible: false });
   };
 
@@ -157,7 +157,7 @@ export default class UserList extends Component<{}, {}> {
             <UserItem
               key={user.id}
               id={user.id}
-              username={user.username}
+              name={user.name}
               role={user.role}
               onDelete={() => this.handleDelete(user.id)}
               onEdit={() => this.handleEdit(user)}
@@ -179,7 +179,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
-    fontFamily: 'Lexend',
   },
   header: {
     backgroundColor: '#40744E',
@@ -192,14 +191,12 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: '#fff',
-    fontFamily: 'Lexend',
+    fontFamily: 'Lexend4',
     fontSize: 25,
-    fontWeight: 'bold',
   },
   out: {
     width: 40,
     height: 40,
-    marginRight: 10,
   },
   addUserButton: {
     backgroundColor: '#40744E',
@@ -213,8 +210,8 @@ const styles = StyleSheet.create({
   },
   addUserText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Lexend4',
+    fontSize: 13,
   },
   body: {
     paddingHorizontal: 20,
@@ -229,8 +226,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  title: { fontSize: 17, color: '#1A1A1A' },
-  info: { fontSize: 11, color: '#333', marginTop: 2 },
-  icons: { flexDirection: 'row' },
-  iconButton: { paddingHorizontal: 6 },
+  title: { 
+    fontSize: 18, 
+    color: '#1A1A1A',
+    fontFamily: 'Lexend3',
+  },
+  info: { 
+    fontSize: 11, 
+    color: '#333',
+    marginTop: 2,
+    fontFamily: 'Lexend3',
+     },
+  icons: { 
+    flexDirection: 'row' 
+  },
+  iconButton: { 
+    paddingHorizontal: 6 
+  },
 });

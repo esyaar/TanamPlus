@@ -1,13 +1,24 @@
 import React, { Component } from 'react';
-import {View,Text,TextInput,TouchableOpacity,StyleSheet,KeyboardAvoidingView,Platform,ScrollView,TouchableWithoutFeedback,Keyboard} from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard
+} from 'react-native';
 import { router } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { editLtt } from '@/services/dataService';
+import { editLttById, getLttDataById } from '@/services/dataService';
 
-export interface UpdateLttData {
-  wilayah_id: string;
+export interface LttData {
+  wilayah_id?: string;
   bpp: string;
   tanggalLaporan: Date;
   kecamatan: string;
@@ -26,21 +37,74 @@ type State = {
   komoditas: string;
   jenisLahan: string;
   luasTambahTanam: string;
+  loading: boolean;
 };
 
-class EditLTTForm extends Component<{}, State> {
-  state: State = {
-    kecamatan: '',
-    kelurahan: '',
-    bpp: '', 
-    tanggalLaporan: new Date(),
-    showDatePicker: false,
-    komoditas: '',
-    jenisLahan: '',
-    luasTambahTanam: '',
+type Props = {
+  route: {
+    params: {
+      id?: string;
+    };
   };
+};
 
-  handleSubmit = () => {
+class EditLTTForm extends Component<Props, State> {
+  id: string;
+  unsubscribe: (() => void) | null = null;
+
+  constructor(props: Props) {
+    super(props);
+    this.id = props.route?.params?.id || '';
+    this.state = {
+      kecamatan: '',
+      kelurahan: '',
+      bpp: '',
+      tanggalLaporan: new Date(),
+      showDatePicker: false,
+      komoditas: '',
+      jenisLahan: '',
+      luasTambahTanam: '',
+      loading: true,
+    };
+  }
+
+  componentDidMount() {
+    if (!this.id) {
+      alert('ID data tidak ditemukan.');
+      router.back();
+      return;
+    }
+  
+    this.unsubscribe = getLttDataById(this.id, (docData: LttData | null) => {
+      if (docData) {
+        // Pastikan tipe tanggal valid
+        let tanggal = new Date(docData.tanggalLaporan);
+        if (isNaN(tanggal.getTime())) {
+          tanggal = new Date();
+        }
+        this.setState({
+          kecamatan: docData.kecamatan || '',
+          kelurahan: docData.kelurahan || '',
+          bpp: docData.bpp || '',
+          tanggalLaporan: tanggal,
+          komoditas: docData.komoditas || '',
+          jenisLahan: docData.jenisLahan || '',
+          luasTambahTanam: docData.luasTambahTanam !== undefined ? docData.luasTambahTanam.toString() : '',
+          loading: false,
+        });
+      } else {
+        alert('Data tidak ditemukan.');
+        router.back();
+      }
+    });
+  }
+  
+
+  componentWillUnmount() {
+    this.unsubscribe && this.unsubscribe();
+  }
+
+  handleSubmit = async () => {
     const {
       kecamatan,
       kelurahan,
@@ -48,19 +112,33 @@ class EditLTTForm extends Component<{}, State> {
       tanggalLaporan,
       komoditas,
       jenisLahan,
-      luasTambahTanam
+      luasTambahTanam,
     } = this.state;
 
-    console.log({
+    if (!kecamatan || !kelurahan || !bpp || !komoditas || !jenisLahan || !luasTambahTanam) {
+      alert('Harap lengkapi semua data!');
+      return;
+    }
+
+    const dataToUpdate = {
       kecamatan,
       kelurahan,
       bpp,
       tanggalLaporan,
       komoditas,
       jenisLahan,
-      luasTambahTanam,
-    });
-  };
+      luasTambahTanam: parseFloat(luasTambahTanam),
+    };
+
+    try {
+      await editLttById(this.id, dataToUpdate);
+      alert('Data berhasil diperbarui!');
+      router.back();
+    } catch (error) {
+      console.error('Gagal update data LTT:', error);
+      alert('Gagal memperbarui data. Silakan coba lagi.');
+    }
+  }
 
   render() {
     const {
@@ -71,8 +149,17 @@ class EditLTTForm extends Component<{}, State> {
       showDatePicker,
       komoditas,
       jenisLahan,
-      luasTambahTanam
+      luasTambahTanam,
+      loading,
     } = this.state;
+
+    if (loading) {
+      return (
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <Text>Memuat data...</Text>
+        </View>
+      );
+    }
 
     return (
       <KeyboardAvoidingView
@@ -97,11 +184,11 @@ class EditLTTForm extends Component<{}, State> {
                   onValueChange={(value) => this.setState({ kecamatan: value })}
                 >
                   <Picker.Item label="Kecamatan" value="" />
-                  <Picker.Item label="Dempo Selatan" value="dempo_selatan" />
-                  <Picker.Item label="Dempo Tengah" value="dempo_tengah" />
-                  <Picker.Item label="Dempo Utara" value="dempo_utara" />
-                  <Picker.Item label="Pagar Alam Selatan" value="pagar_alam_selatan" />
-                  <Picker.Item label="Pagar Alam Utara" value="pagar_alam_utara" />
+                  <Picker.Item label="Dempo Selatan" value="Dempo Selatan" />
+                  <Picker.Item label="Dempo Tengah" value="Dempo Tengah" />
+                  <Picker.Item label="Dempo Utara" value="Dempo Utara" />
+                  <Picker.Item label="Pagar Alam Selatan" value="Pagar Alam Selatan" />
+                  <Picker.Item label="Pagar Alam Utara" value="Pagar Alam Utara" />
                 </Picker>
               </View>
 
@@ -122,7 +209,7 @@ class EditLTTForm extends Component<{}, State> {
                   <Picker.Item label="Burung Dinang" value="Burung Dinang" />
                   <Picker.Item label="Candi Jaya" value="Candi Jaya" />
                   <Picker.Item label="Curup Jare" value="Curup Jare" />
-                  <Picker.Item label="Dempio Makmur" value="Dempio Makmur" />
+                  <Picker.Item label="Dempo Makmur" value="Dempo Makmur" />
                   <Picker.Item label="Gunung Dempo" value="Gunung Dempo" />
                   <Picker.Item label="Jangkar Mas" value="Jangkar Mas" />
                   <Picker.Item label="Jokoh" value="Jokoh" />
@@ -150,7 +237,7 @@ class EditLTTForm extends Component<{}, State> {
               </View>
 
               <TextInput
-                placeholder="Nama BPP"
+                placeholder="BPP"
                 style={styles.inputBox2}
                 value={bpp}
                 onChangeText={(text) => this.setState({ bpp: text })}
@@ -185,16 +272,15 @@ class EditLTTForm extends Component<{}, State> {
                   onValueChange={(value) => this.setState({ komoditas: value })}
                 >
                   <Picker.Item label="Jenis Komoditas Pangan" value="" />
+                  <Picker.Item label="Padi" value="Padi" />
                   <Picker.Item label="Jagung" value="Jagung" />
                   <Picker.Item label="Kedelai" value="Kedelai" />
-                  <Picker.Item label="Kacang Tanah" value="Kacang_Tanah" />
-                  <Picker.Item label="Kacang Hijau" value="Kacang_Hijau" />
+                  <Picker.Item label="Kacang Tanah" value="Kacang Tanah" />
+                  <Picker.Item label="Kacang Hijau" value="Kacang Hijau" />
                   <Picker.Item label="Singkong" value="Singkong" />
-                  <Picker.Item label="Ubi Jalar" value="Ubi_Jalar" />
+                  <Picker.Item label="Ubi Jalar" value="Ubi Jalar" />
                   <Picker.Item label="Sorgum" value="Sorgum" />
-                  <Picker.Item label="Gandum" value="Gandum" />
-                  <Picker.Item label="Talas" value="Talas" />
-                  <Picker.Item label="Ganyong" value="Ganyong" />
+                  <Picker.Item label="Kacang-kacangan" value="Kacang-kacangan" />
                 </Picker>
               </View>
 
@@ -204,21 +290,23 @@ class EditLTTForm extends Component<{}, State> {
                   onValueChange={(value) => this.setState({ jenisLahan: value })}
                 >
                   <Picker.Item label="Jenis Lahan" value="" />
-                  <Picker.Item label="Sawah" value="Sawah" />
-                  <Picker.Item label="Non-Sawah" value="Non-Sawah" />
+                  <Picker.Item label="Sawah Irigasi" value="Sawah Irigasi" />
+                  <Picker.Item label="Sawah Tadah Hujan" value="Sawah Tadah Hujan" />
+                  <Picker.Item label="Ladang" value="Ladang" />
+                  <Picker.Item label="Huma" value="Huma" />
                 </Picker>
               </View>
 
               <TextInput
-                placeholder="Luas Tambah Tanam Harian (Ha)"
+                placeholder="Luas Tambah Tanam (ha)"
                 style={styles.inputBox2}
                 keyboardType="numeric"
                 value={luasTambahTanam}
                 onChangeText={(text) => this.setState({ luasTambahTanam: text })}
               />
 
-              <TouchableOpacity style={styles.submitButton} onPress={this.handleSubmit}>
-                <Text style={styles.submitText}>Simpan</Text>
+              <TouchableOpacity style={styles.button} onPress={this.handleSubmit}>
+                <Text style={styles.buttonText}>Update</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -227,79 +315,69 @@ class EditLTTForm extends Component<{}, State> {
     );
   }
 }
-export default EditLTTForm;
 
 const styles = StyleSheet.create({
   container: {
-    paddingLeft: 20,
-    paddingRight: 20,
-    paddingBottom: 20,
-    paddingTop: 60,
-    backgroundColor: '#fff',
-    flexGrow: 1,
+    backgroundColor: 'white',
+    padding: 20,
+    flex: 1,
   },
   header: {
-    backgroundColor: '#40744E',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 20,
-    flexDirection: 'row',      
+    backgroundColor: '#3d5af1',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  headerText: {
-    marginLeft: 5, 
-    color: '#fff',
-    fontWeight: 'bold',
+    marginBottom: 15,
   },
   button: {
-    marginRight:10,
+    backgroundColor: '#3d5af1',
+    padding: 10,
+    borderRadius: 8,
+    marginVertical: 10,
+    alignItems: 'center',
   },
-  sectionTitle: {
-    paddingLeft: 10,
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
-    marginTop: 15,
+  },
+  headerText: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginLeft: 15,
+    color: 'white',
   },
   inputBox: {
-    backgroundColor: '#9FC2A8',
-    borderRadius: 10,
-    alignContent: 'center',
-    marginBottom: 7,
-    width: 345,
-    height:50,
+    borderWidth: 1,
+    borderColor: '#3d5af1',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 15,
   },
   inputBox2: {
-    backgroundColor: '#9FC2A8',
-    borderRadius: 10,
-    alignContent: 'center',
-    paddingLeft: 20,
-    marginBottom: 7,
-    width: 345,
-    height:50,
+    borderWidth: 1,
+    borderColor: '#3d5af1',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  sectionTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 10,
   },
   date: {
-    backgroundColor: '#9FC2A8',
-    borderRadius: 10,
-    alignContent: 'center',
-    marginBottom: 7,
-    width: 345,
-    height:50,
+    backgroundColor: '#e0e0e0',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
   },
   datetext: {
-    paddingLeft: 20,
-    paddingTop:15, 
-  },
-  submitButton: {
-    backgroundColor: '#40744E',
-    borderRadius: 30,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginTop: 30,
-  },
-  submitText: {
-    color: '#fff',
-    fontWeight: 'bold',
     fontSize: 16,
   },
 });
 
+export default EditLTTForm;

@@ -9,7 +9,10 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
-    Lexend: require('../assets/fonts/Lexend.ttf'),
+    Lexend1: require('../assets/fonts/Lexend-Thin.ttf'),
+    Lexend2: require('../assets/fonts/Lexend-Light.ttf'),
+    Lexend3: require('../assets/fonts/Lexend-Regular.ttf'),
+    Lexend4: require('../assets/fonts/Lexend-Bold.ttf'),
   });
 
   if (!loaded) {
