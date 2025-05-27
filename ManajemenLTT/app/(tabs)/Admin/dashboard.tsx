@@ -48,27 +48,36 @@ export default class Dashboard extends Component<{}, State> {
   fetchChartData = async () => {
     try {
       const snapshot = await getDocs(collection(db, 'ltt'));
-      // map komoditas → total luas
-      const komoditasMap: Record<string, number> = {};
+      // Map untuk menyimpan total luasTambahTanam berdasarkan kombinasi kecamatan:komoditas
+      const groupedData: Record<string, { kecamatan: string; komoditas: string; luasTambahTanam: number }> = {};
+  
       snapshot.forEach(doc => {
         const { komoditas, kecamatan, luasTambahTanam } = doc.data();
-        // filter untuk kecamatan
-
+        // Filter berdasarkan kecamatan yang dipilih
         if (
           this.state.selectedKecamatan === 'Seluruh Kota' ||
           kecamatan === this.state.selectedKecamatan
         ) {
-          komoditasMap[komoditas] = (komoditasMap[komoditas] || 0) + (luasTambahTanam || 0);
+          // Buat kunci unik berdasarkan kecamatan dan komoditas
+          const key = `${kecamatan}:${komoditas}`;
+          if (groupedData[key]) {
+            // Jika kombinasi sudah ada, tambahkan luasTambahTanam
+            groupedData[key].luasTambahTanam += luasTambahTanam || 0;
+          } else {
+            // Jika kombinasi belum ada, buat entri baru
+            groupedData[key] = { kecamatan, komoditas, luasTambahTanam: luasTambahTanam || 0 };
+          }
         }
       });
-
-      const COLORS = ['#4385FF','#FF7B6F','#FCD35C','#3D8963','#3E58A0','#98A03E','#CF57A7'];
-      const chartData = Object.entries(komoditasMap).map(([name, value], i) => ({
-        name,
-        value,
+  
+      // Konversi groupedData ke format chartData
+      const COLORS = ['#4385FF', '#FF7B6F', '#FCD35C', '#3D8963', '#3E58A0', '#98A03E', '#CF57A7'];
+      const chartData = Object.values(groupedData).map((item, i) => ({
+        name: item.komoditas, // Hanya nama komoditas yang ditampilkan di chart
+        value: item.luasTambahTanam,
         color: COLORS[i % COLORS.length],
       }));
-
+  
       this.setState({ chartData });
     } catch (e) {
       console.error('Error fetchChartData:', e);
@@ -84,27 +93,39 @@ export default class Dashboard extends Component<{}, State> {
 
   handleDownload = async () => {
     try {
-      // Step 1: Fetch data from Firestore
       const snapshot = await getDocs(collection(db, 'ltt'));
-      const data = snapshot.docs
-        .map(doc => doc.data())
-        .filter(item =>
+      // Map untuk menyimpan total luasTambahTanam berdasarkan kombinasi kecamatan:komoditas
+      const groupedData: Record<string, { kecamatan: string; komoditas: string; luasTambahTanam: number }> = {};
+  
+      snapshot.forEach(doc => {
+        const { komoditas, kecamatan, luasTambahTanam } = doc.data();
+        // Filter berdasarkan kecamatan yang dipilih
+        if (
           this.state.selectedKecamatan === 'Seluruh Kota' ||
-          item.kecamatan === this.state.selectedKecamatan
-        );
+          kecamatan === this.state.selectedKecamatan
+        ) {
+          const key = `${kecamatan}:${komoditas}`;
+          if (groupedData[key]) {
+            groupedData[key].luasTambahTanam += luasTambahTanam || 0;
+          } else {
+            groupedData[key] = { kecamatan, komoditas, luasTambahTanam: luasTambahTanam || 0 };
+          }
+        }
+      });
+  
+      const data = Object.values(groupedData);
   
       if (data.length === 0) {
         Alert.alert('Tidak Ada Data', `Tidak ada data untuk ${this.state.selectedKecamatan}.`);
         return;
       }
   
-      // Step 2: Generate HTML content for the PDF
       const htmlContent = `
         <html>
           <head>
             <style>
               body { font-family: Arial, sans-serif; padding: 20px; }
-              h1 { text-align: center; color:rgb(0, 0, 0); }
+              h1 { text-align: center; color: #40744E; }
               table { width: 100%; border-collapse: collapse; margin-top: 20px; }
               th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
               th { background-color: #E9F5EC; }
@@ -134,23 +155,19 @@ export default class Dashboard extends Component<{}, State> {
         </html>
       `;
   
-      // Step 3: Generate PDF using expo-print
       const { uri } = await printToFileAsync({
         html: htmlContent,
         base64: false,
       });
   
-      // Step 4: Define a path to save the PDF
       const fileName = `LTT_${this.state.selectedKecamatan}_${new Date().toISOString().split('T')[0]}.pdf`;
       const newPath = `${FileSystem.documentDirectory}${fileName}`;
   
-      // Step 5: Move the PDF to a permanent location
       await FileSystem.moveAsync({
         from: uri,
         to: newPath,
       });
   
-      // Step 6: Check if sharing is available and share the file
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(newPath, {
           dialogTitle: 'Bagikan Laporan LTT',
@@ -286,7 +303,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 10,
     marginHorizontal: 10,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   rowTop: {
     flexDirection: 'row',

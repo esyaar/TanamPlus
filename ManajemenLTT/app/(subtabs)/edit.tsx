@@ -269,8 +269,7 @@ class EditLTTForm extends Component<Props, State> {
               <View style={styles.inputBox}>
                 <Picker
                   selectedValue={komoditas}
-                  onValueChange={(value) => this.setState({ komoditas: value })}
-                >
+                  onValueChange={(value) => this.setState({ komoditas: value })}>
                   <Picker.Item label="Jenis Komoditas Pangan" value="" />
                   <Picker.Item label="Padi" value="Padi" />
                   <Picker.Item label="Jagung" value="Jagung" />
@@ -280,7 +279,10 @@ class EditLTTForm extends Component<Props, State> {
                   <Picker.Item label="Singkong" value="Singkong" />
                   <Picker.Item label="Ubi Jalar" value="Ubi Jalar" />
                   <Picker.Item label="Sorgum" value="Sorgum" />
-                  <Picker.Item label="Kacang-kacangan" value="Kacang-kacangan" />
+                  <Picker.Item label="Gandum" value="Gandum" />
+                  <Picker.Item label="Talas" value="Talas" />
+                  <Picker.Item label="Ganyong" value="Ganyong" />
+                  <Picker.Item label="Umbi Lainnya" value="Umbi Lainnya" />
                 </Picker>
               </View>
 
@@ -290,10 +292,8 @@ class EditLTTForm extends Component<Props, State> {
                   onValueChange={(value) => this.setState({ jenisLahan: value })}
                 >
                   <Picker.Item label="Jenis Lahan" value="" />
-                  <Picker.Item label="Sawah Irigasi" value="Sawah Irigasi" />
-                  <Picker.Item label="Sawah Tadah Hujan" value="Sawah Tadah Hujan" />
-                  <Picker.Item label="Ladang" value="Ladang" />
-                  <Picker.Item label="Huma" value="Huma" />
+                  <Picker.Item label="Sawah" value="Sawah" />
+                  <Picker.Item label="Non-Sawah" value="Non-Sawah" />
                 </Picker>
               </View>
 

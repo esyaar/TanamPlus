@@ -236,6 +236,7 @@ class InputLTTForm extends Component<{}, State> {
                   <Picker.Item label="Gandum" value="Gandum" />
                   <Picker.Item label="Talas" value="Talas" />
                   <Picker.Item label="Ganyong" value="Ganyong" />
+                  <Picker.Item label="Umbi Lainnya" value="Umbi Lainnya" />
                 </Picker>
               </View>
 
