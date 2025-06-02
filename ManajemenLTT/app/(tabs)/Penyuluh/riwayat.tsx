@@ -1,28 +1,26 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, FlatList } from 'react-native';
+import { 
+  View,
+  Text,
+  StyleSheet, 
+  TouchableOpacity, 
+  Alert, 
+  Image, 
+  ScrollView 
+} from 'react-native';
 import { router } from 'expo-router';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import LogoutModal from '@/components/ui/modalout';
-import { onSnapshot } from 'firebase/firestore';
-import { getLttData, deleteLttData } from '@/services/dataService';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { deleteLttData, LttData } from '@/services/dataService';
+import { db } from '@/services/firebaseConfig';
 
-interface LttData {
-  id: string;
-  komoditas: string;
-  tanggalLaporan: Date;
-}
-
-interface State {
-  modalVisible: boolean;
-  data: LttData[];
-}
-
-type RiwayatItemProps = {
+interface RiwayatItemProps {
   jenisKomoditas: string;
   tanggalInput: string;
   onDelete: () => void;
   onEdit: () => void;
-};
+}
 
 class RiwayatItem extends Component<RiwayatItemProps> {
   showDeleteConfirmation = () => {
@@ -57,22 +55,54 @@ class RiwayatItem extends Component<RiwayatItemProps> {
   }
 }
 
-class History extends Component<{}, State> {
-  unsubscribe: (() => void) | undefined;
+interface LttData {
+  id: string;
+  wilayah_id: string;
+  bpp: string;
+  tanggalLaporan: Date;
+  kecamatan: string;
+  kelurahan: string;
+  komoditas: string;
+  jenisLahan: string;
+  luasTambahTanam: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
+interface State {
+  modalVisible: boolean;
+  ltt: LttData[];
+}
+
+export default class History extends Component<{}, State> {
   state: State = {
     modalVisible: false,
-    data: [],
+    ltt: [],
   };
 
+  unsubscribe: (() => void) | null = null;
+
   componentDidMount() {
-    this.unsubscribe = getLttData((items: LttData[]) => {
-      this.setState({ data: items });
-    });
+    const userCollection = collection(db, 'ltt');
+    this.unsubscribe = onSnapshot(
+      userCollection,
+      (snapshot) => {
+        const usersData = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as Omit<LttData, 'id'>),
+        }));
+        console.log('Data dari Firestore:', usersData);
+        this.setState({ ltt: usersData });
+      },
+      (error) => {
+        console.error('Gagal memuat data:', error);
+        Alert.alert('Error', 'Gagal memuat data dari Firestore.');
+      }
+    );
   }
 
   componentWillUnmount() {
-    this.unsubscribe && this.unsubscribe();
+    this.unsubscribe?.();
   }
 
   handleDelete = async (id: string) => {
@@ -85,8 +115,16 @@ class History extends Component<{}, State> {
     }
   };
 
-  handleEdit = (id: string) => {
-    router.push(`/(subtabs)/edit?id=${id}`);
+  handleEdit = (item: LttData) => {
+    if (!item.id) {
+      Alert.alert('Error', 'ID data tidak valid.');
+      return;
+    }
+    console.log('Mengirim ID ke edit:', item.id);
+    router.push({
+      pathname: '/(subtabs)/edit',
+      params: { id: String(item.id) },
+    });
   };
 
   confirmLogout = () => {
@@ -94,22 +132,16 @@ class History extends Component<{}, State> {
     router.replace('./index');
   };
 
-  openModal = () => this.setState({ modalVisible: true });
-  closeModal = () => this.setState({ modalVisible: false });
+  openModal = () => {
+    this.setState({ modalVisible: true });
+  };
 
-  renderItem = ({ item }: { item: LttData }) => {
-    const date = new Date(item.tanggalLaporan).toLocaleDateString();
-    return (
-      <RiwayatItem
-        jenisKomoditas={item.komoditas}
-        tanggalInput={date}
-        onDelete={() => this.handleDelete(item.id)}
-        onEdit={() => this.handleEdit(item.id)}
-      />
-    );
+  closeModal = () => {
+    this.setState({ modalVisible: false });
   };
 
   render() {
+    const { ltt, modalVisible } = this.state;
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -119,21 +151,34 @@ class History extends Component<{}, State> {
           </TouchableOpacity>
         </View>
 
-        <FlatList //muncul jika data tidak ada
-          contentContainerStyle={styles.body}
-          data={this.state.data}
-          keyExtractor={(item) => item.id}
-          renderItem={this.renderItem}
-          ListEmptyComponent={
-          <View style={styles.nodata}>
-          <Image source={require('@/assets/images/kosong.png')} style={styles.kosong}/>
-          <Text style={styles.emptyText}>Belum ada data :(</Text>
-          </View>
-        }
-        />
+        <ScrollView contentContainerStyle={styles.body}>
+          {ltt.length === 0 ? (
+            <View style={styles.nodata}>
+              <Image source={require('@/assets/images/kosong.png')} style={styles.kosong} />
+              <Text style={styles.emptyText}>Belum ada data :(</Text>
+            </View>
+          ) : (
+            ltt.map((item) => {
+              const date =
+                item.tanggalLaporan && typeof item.tanggalLaporan.toDate === 'function'
+                  ? item.tanggalLaporan.toDate().toLocaleDateString()
+                  : 'Tanggal tidak valid';
+            
+              return (
+                <RiwayatItem
+                  key={item.id}
+                  jenisKomoditas={item.komoditas}
+                  tanggalInput={date}
+                  onDelete={() => this.handleDelete(item.id)}
+                  onEdit={() => this.handleEdit(item)}
+                />
+              );
+            })
+          )}
+        </ScrollView>
 
         <LogoutModal
-          visible={this.state.modalVisible}
+          visible={modalVisible}
           onClose={this.closeModal}
           onConfirm={this.confirmLogout}
         />
@@ -141,8 +186,6 @@ class History extends Component<{}, State> {
     );
   }
 }
-
-export default History;
 
 const styles = StyleSheet.create({
   container: {
@@ -204,12 +247,12 @@ const styles = StyleSheet.create({
   iconButton: {
     paddingHorizontal: 6,
   },
-  kosong:{
+  kosong: {
     width: 80,
     height: 80,
-    marginTop:200,
+    marginTop: 200,
   },
-  nodata:{
-    alignItems:'center',
-  }
+  nodata: {
+    alignItems: 'center',
+  },
 });

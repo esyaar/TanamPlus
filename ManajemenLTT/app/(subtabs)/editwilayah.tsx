@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,36 +11,31 @@ import {
   Keyboard,
   Alert,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/services/firebaseConfig';
-import { wilayahService, editWilayahById, UpdateWilayah } from '@/services/wilayahService';
+import { wilayahService, UpdateWilayah, WilayahData } from '@/services/wilayahService';
 
-export class User {
-  constructor(public id: string, public name: string, public role: string) {}
-
-  static fromFirestore(doc: any): User {
-    const data = doc.data();
-    return new User(doc.id, data.name, data.role);
-  }
+interface User {
+  id: string;
+  name: string;
+  role: string;
 }
 
-type State = {
-  id: string;
-  users_id: string;
-  kecamatan: string;
-  kelurahan: string;
-  penyuluh1: string;
-  penyuluh2: string;
-  penyuluh3: string;
-  penyuluhList: User[];
-  showAdditionalPicker: boolean;
+const User = {
+  fromFirestore(doc: any): User {
+    const data = doc.data();
+    return { id: doc.id, name: data.name, role: data.role };
+  },
 };
 
-class Editwilayah extends Component<{}, State> {
-  state: State = {
+const EditWilayah: React.FC = () => {
+  const { id } = useLocalSearchParams();
+  console.log('ID yang diterima:', id);
+
+  const [state, setState] = useState({
     id: '',
     users_id: '',
     kecamatan: '',
@@ -48,36 +43,64 @@ class Editwilayah extends Component<{}, State> {
     penyuluh1: '',
     penyuluh2: '',
     penyuluh3: '',
-    penyuluhList: [],
+    penyuluhList: [] as User[],
     showAdditionalPicker: false,
-  };
+  });
 
-  toggleAdditionalPicker = () => {
-    this.setState(prevState => ({
+  // Fetch wilayah data by ID
+  useEffect(() => {
+    if (id) {
+      const fetchWilayahData = async () => {
+        try {
+          const wilayahDoc = await getDoc(doc(db, 'wilayah', id as string));
+          if (wilayahDoc.exists()) {
+            const wilayahData = wilayahDoc.data() as WilayahData;
+            setState((prev) => ({
+              ...prev,
+              id: id as string,
+              kecamatan: wilayahData.kecamatan || '',
+              kelurahan: wilayahData.kelurahan || '',
+              penyuluh1: wilayahData.penyuluh?.[0]?.id || '',
+              penyuluh2: wilayahData.penyuluh?.[1]?.id || '',
+              penyuluh3: wilayahData.penyuluh?.[2]?.id || '',
+              showAdditionalPicker: !!wilayahData.penyuluh?.[2]?.id,
+            }));
+          } else {
+            Alert.alert('Error', 'Data wilayah tidak ditemukan.');
+          }
+        } catch (error) {
+          console.error('Error fetching wilayah data:', error);
+          Alert.alert('Error', 'Gagal memuat data wilayah.');
+        }
+      };
+      fetchWilayahData();
+    }
+  }, [id]);
+
+  // Fetch penyuluh list
+  useEffect(() => {
+    const q = query(collection(db, 'users'), where('role', '==', 'penyuluh'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const users: User[] = [];
+      querySnapshot.forEach((doc) => {
+        users.push(User.fromFirestore(doc));
+      });
+      setState((prevState) => ({ ...prevState, penyuluhList: users }));
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const toggleAdditionalPicker = () => {
+    setState((prevState) => ({
+      ...prevState,
       showAdditionalPicker: !prevState.showAdditionalPicker,
       penyuluh3: prevState.showAdditionalPicker ? '' : prevState.penyuluh3,
     }));
   };
 
-  unsubscribeUsers: (() => void) | null = null;
-
-  componentDidMount() {
-    const q = query(collection(db, 'users'), where('role', '==', 'penyuluh'));
-    this.unsubscribeUsers = onSnapshot(q, (querySnapshot) => {
-      const users: User[] = [];
-      querySnapshot.forEach((doc) => {
-        users.push(User.fromFirestore(doc));
-      });
-      this.setState({ penyuluhList: users });
-    });
-  }
-
-  componentWillUnmount() {
-    if (this.unsubscribeUsers) this.unsubscribeUsers();
-  }
-
-  handleSubmit = async () => {
-    const { kecamatan, kelurahan, penyuluh1, penyuluh2, penyuluh3, penyuluhList } = this.state;
+  const handleSubmit = async () => {
+    const { kecamatan, kelurahan, penyuluh1, penyuluh2, penyuluh3, penyuluhList } = state;
 
     if (!kecamatan || !kelurahan || !penyuluh1) {
       Alert.alert('Validasi', 'Mohon lengkapi semua data sebelum mengirim.');
@@ -85,24 +108,22 @@ class Editwilayah extends Component<{}, State> {
     }
 
     try {
-      // Ambil nama penyuluh berdasarkan ID
-      const getPenyuluhName = (id: string) => penyuluhList.find(user => user.id === id)?.name || '';
+      const getPenyuluhName = (id: string) => penyuluhList.find((user) => user.id === id)?.name || '';
 
-      // Siapkan array penyuluh dengan id dan name
       const penyuluhData = [
         penyuluh1 && { id: penyuluh1, name: getPenyuluhName(penyuluh1) },
         penyuluh2 && { id: penyuluh2, name: getPenyuluhName(penyuluh2) },
         penyuluh3 && { id: penyuluh3, name: getPenyuluhName(penyuluh3) },
-      ].filter(Boolean); // Hapus entri kosong
+      ].filter(Boolean);
 
       const wilayahData: UpdateWilayah = {
         user_id: penyuluh1,
         kecamatan,
         kelurahan,
-        penyuluh: penyuluhData, // Simpan array penyuluh
+        penyuluh: penyuluhData,
       };
 
-      const docId = await wilayahService.editWilayahById(wilayahData);
+      const docId = await wilayahService.editWilayahById(wilayahData, id as string);
       Alert.alert('Sukses', 'Data wilayah berhasil disimpan!');
       console.log('Data tersimpan dengan ID:', docId);
       router.replace('/Admin/wilayahkerja');
@@ -112,147 +133,138 @@ class Editwilayah extends Component<{}, State> {
     }
   };
 
-  render() {
-    const {
-      kecamatan,
-      kelurahan,
-      penyuluh1,
-      penyuluh2,
-      penyuluh3,
-      penyuluhList,
-      showAdditionalPicker,
-    } = this.state;
+  const { kecamatan, kelurahan, penyuluh1, penyuluh2, penyuluh3, penyuluhList, showAdditionalPicker } = state;
 
-    return (
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView contentContainerStyle={styles.scrollContainer}>
-            <View style={styles.inner}>
-              <View style={styles.header}>
-                <TouchableOpacity style={styles.button} onPress={() => router.back()}>
-                  <Ionicons name="chevron-back" size={24} color="white" />
-                </TouchableOpacity>
-                <Text style={styles.headerText}>Edit Wilayah Kerja</Text>
-              </View>
-
-              <View style={styles.inputBox}>
-                <Picker
-                  selectedValue={kecamatan}
-                  onValueChange={(value) => this.setState({ kecamatan: value })}
-                >
-                  <Picker.Item label="Kecamatan" value="" />
-                  <Picker.Item label="Dempo Selatan" value="Dempo Selatan" />
-                  <Picker.Item label="Dempo Tengah" value="Dempo Tengah" />
-                  <Picker.Item label="Dempo Utara" value="Dempo Utara" />
-                  <Picker.Item label="Pagar Alam Selatan" value="Pagar Alam Selatan" />
-                  <Picker.Item label="Pagar Alam Utara" value="Pagar Alam Utara" />
-                </Picker>
-              </View>
-
-              <View style={styles.inputBox}>
-                <Picker
-                  selectedValue={kelurahan}
-                  onValueChange={(value) => this.setState({ kelurahan: value })}
-                >
-                  <Picker.Item label="Kelurahan" value="" />
-                  <Picker.Item label="Agung Lawongan" value="Agung Lawongan" />
-                  <Picker.Item label="Alun Dua" value="Alun Dua" />
-                  <Picker.Item label="Atung Bungsu" value="Atung Bungsu" />
-                  <Picker.Item label="Bangun Jaya" value="Bangun Jaya" />
-                  <Picker.Item label="Bangun Rejo" value="Bangun Rejo" />
-                  <Picker.Item label="Beringin Jaya" value="Beringin Jaya" />
-                  <Picker.Item label="Besemah Serasan" value="Besemah Serasan" />
-                  <Picker.Item label="Bumi Agung" value="Bumi Agung" />
-                  <Picker.Item label="Burung Dinang" value="Burung Dinang" />
-                  <Picker.Item label="Candi Jaya" value="Candi Jaya" />
-                  <Picker.Item label="Curup Jare" value="Curup Jare" />
-                  <Picker.Item label="Dempo Makmur" value="Dempo Makmur" />
-                  <Picker.Item label="Gunung Dempo" value="Gunung Dempo" />
-                  <Picker.Item label="Jangkar Mas" value="Jangkar Mas" />
-                  <Picker.Item label="Jokoh" value="Jokoh" />
-                  <Picker.Item label="Kance Diwe" value="Kance Diwe" />
-                  <Picker.Item label="Karang Dalo" value="Karang Dalo" />
-                  <Picker.Item label="Kusipan Babas" value="Kusipan Babas" />
-                  <Picker.Item label="Lubuk Buntak" value="Lubuk Buntak" />
-                  <Picker.Item label="Muara Siban" value="Muara Siban" />
-                  <Picker.Item label="Nendagung" value="Nendagung" />
-                  <Picker.Item label="Padang Temu" value="Padang Temu" />
-                  <Picker.Item label="Pagar Wangi" value="Pagar Wangi" />
-                  <Picker.Item label="Pagaralam" value="Pagaralam" />
-                  <Picker.Item label="Pelang Kenidai" value="Pelang Kenidai" />
-                  <Picker.Item label="Penjalang" value="Penjalang" />
-                  <Picker.Item label="Prabu Dipo" value="Prabu Dipo" />
-                  <Picker.Item label="Reba Tinggi" value="Reba Tinggi" />
-                  <Picker.Item label="Selibar" value="Selibar" />
-                  <Picker.Item label="Sidorejo" value="Sidorejo" />
-                  <Picker.Item label="Sukorejo" value="Sukorejo" />
-                  <Picker.Item label="Tanjung Payang" value="Tanjung Payang" />
-                  <Picker.Item label="Tebat Giri Indah" value="Tebat Giri Indah" />
-                  <Picker.Item label="Tumbak Ulas" value="Tumbak Ulas" />
-                  <Picker.Item label="Ulu Rurah" value="Ulu Rurah" />
-                </Picker>
-              </View>
-
-              <Text style={styles.sectionTitle}>Penyuluh Pertanian</Text>
-
-              <View style={styles.inputBox}>
-                <Picker
-                  selectedValue={penyuluh1}
-                  onValueChange={(value) => this.setState({ penyuluh1: value })}
-                >
-                  <Picker.Item label="Pilih Penyuluh 1" value="" />
-                  {penyuluhList.map((user) => (
-                    <Picker.Item key={user.id} label={user.name} value={user.id} />
-                  ))}
-                </Picker>
-              </View>
-
-              <View style={styles.inputBox}>
-                <Picker
-                  selectedValue={penyuluh2}
-                  onValueChange={(value) => this.setState({ penyuluh2: value })}
-                >
-                  <Picker.Item label="Pilih Penyuluh 2" value="" />
-                  {penyuluhList.map((user) => (
-                    <Picker.Item key={user.id + '_2'} label={user.name} value={user.id} />
-                  ))}
-                </Picker>
-              </View>
-
-              {showAdditionalPicker && (
-                <View style={styles.inputBox}>
-                  <Picker
-                    selectedValue={penyuluh3}
-                    onValueChange={(value) => this.setState({ penyuluh3: value })}
-                  >
-                    <Picker.Item label="Pilih Penyuluh 3" value="" />
-                    {penyuluhList.map((user) => (
-                      <Picker.Item key={user.id + '_3'} label={user.name} value={user.id} />
-                    ))}
-                  </Picker>
-                </View>
-              )}
-
-              <TouchableOpacity style={styles.addWilayahButton} onPress={this.toggleAdditionalPicker}>
-                <Text style={styles.addWilayahText}>
-                  {showAdditionalPicker ? 'Hapus Penyuluh' : 'Tambah Penyuluh'}
-                </Text>
-                <MaterialCommunityIcons name={showAdditionalPicker ? 'minus' : 'plus'} size={24} color="white" />
+  return (
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View style={styles.inner}>
+            <View style={styles.header}>
+              <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+                <Ionicons name="chevron-back" size={24} color="white" />
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.submitButton} onPress={this.handleSubmit}>
-                <Text style={styles.submitText}>Tambahkan</Text>
-              </TouchableOpacity>
+              <Text style={styles.headerText}>Edit Wilayah Kerja</Text>
             </View>
-          </ScrollView>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
-    );
-  }
-}
+
+            <View style={styles.inputBox}>
+              <Picker
+                selectedValue={kecamatan}
+                onValueChange={(value) => setState((prev) => ({ ...prev, kecamatan: value }))}
+              >
+                <Picker.Item label="Kecamatan" value="" />
+                <Picker.Item label="Dempo Selatan" value="Dempo Selatan" />
+                <Picker.Item label="Dempo Tengah" value="Dempo Tengah" />
+                <Picker.Item label="Dempo Utara" value="Dempo Utara" />
+                <Picker.Item label="Pagar Alam Selatan" value="Pagar Alam Selatan" />
+                <Picker.Item label="Pagar Alam Utara" value="Pagar Alam Utara" />
+              </Picker>
+            </View>
+
+            <View style={styles.inputBox}>
+              <Picker
+                selectedValue={kelurahan}
+                onValueChange={(value) => setState((prev) => ({ ...prev, kelurahan: value }))}
+              >
+                <Picker.Item label="Kelurahan" value="" />
+                <Picker.Item label="Agung Lawongan" value="Agung Lawongan" />
+                <Picker.Item label="Alun Dua" value="Alun Dua" />
+                <Picker.Item label="Atung Bungsu" value="Atung Bungsu" />
+                <Picker.Item label="Bangun Jaya" value="Bangun Jaya" />
+                <Picker.Item label="Bangun Rejo" value="Bangun Rejo" />
+                <Picker.Item label="Beringin Jaya" value="Beringin Jaya" />
+                <Picker.Item label="Besemah Serasan" value="Besemah Serasan" />
+                <Picker.Item label="Bumi Agung" value="Bumi Agung" />
+                <Picker.Item label="Burung Dinang" value="Burung Dinang" />
+                <Picker.Item label="Candi Jaya" value="Candi Jaya" />
+                <Picker.Item label="Curup Jare" value="Curup Jare" />
+                <Picker.Item label="Dempo Makmur" value="Dempo Makmur" />
+                <Picker.Item label="Gunung Dempo" value="Gunung Dempo" />
+                <Picker.Item label="Jangkar Mas" value="Jangkar Mas" />
+                <Picker.Item label="Jokoh" value="Jokoh" />
+                <Picker.Item label="Kance Diwe" value="Kance Diwe" />
+                <Picker.Item label="Karang Dalo" value="Karang Dalo" />
+                <Picker.Item label="Kusipan Babas" value="Kusipan Babas" />
+                <Picker.Item label="Lubuk Buntak" value="Lubuk Buntak" />
+                <Picker.Item label="Muara Siban" value="Muara Siban" />
+                <Picker.Item label="Nendagung" value="Nendagung" />
+                <Picker.Item label="Padang Temu" value="Padang Temu" />
+                <Picker.Item label="Pagar Wangi" value="Pagar Wangi" />
+                <Picker.Item label="Pagaralam" value="Pagaralam" />
+                <Picker.Item label="Pelang Kenidai" value="Pelang Kenidai" />
+                <Picker.Item label="Penjalang" value="Penjalang" />
+                <Picker.Item label="Prabu Dipo" value="Prabu Dipo" />
+                <Picker.Item label="Reba Tinggi" value="Reba Tinggi" />
+                <Picker.Item label="Selibar" value="Selibar" />
+                <Picker.Item label="Sidorejo" value="Sidorejo" />
+                <Picker.Item label="Sukorejo" value="Sukorejo" />
+                <Picker.Item label="Tanjung Payang" value="Tanjung Payang" />
+                <Picker.Item label="Tebat Giri Indah" value="Tebat Giri Indah" />
+                <Picker.Item label="Tumbak Ulas" value="Tumbak Ulas" />
+                <Picker.Item label="Ulu Rurah" value="Ulu Rurah" />
+              </Picker>
+            </View>
+
+            <Text style={styles.sectionTitle}>Penyuluh Pertanian</Text>
+
+            <View style={styles.inputBox}>
+              <Picker
+                selectedValue={penyuluh1}
+                onValueChange={(value) => setState((prev) => ({ ...prev, penyuluh1: value }))}
+              >
+                <Picker.Item label="Pilih Penyuluh 1" value="" />
+                {penyuluhList.map((user) => (
+                  <Picker.Item key={user.id} label={user.name} value={user.id} />
+                ))}
+              </Picker>
+            </View>
+
+            <View style={styles.inputBox}>
+              <Picker
+                selectedValue={penyuluh2}
+                onValueChange={(value) => setState((prev) => ({ ...prev, penyuluh2: value }))}
+              >
+                <Picker.Item label="Pilih Penyuluh 2" value="" />
+                {penyuluhList.map((user) => (
+                  <Picker.Item key={user.id + '_2'} label={user.name} value={user.id} />
+                ))}
+              </Picker>
+            </View>
+
+            {showAdditionalPicker && (
+              <View style={styles.inputBox}>
+                <Picker
+                  selectedValue={penyuluh3}
+                  onValueChange={(value) => setState((prev) => ({ ...prev, penyuluh3: value }))}
+                >
+                  <Picker.Item label="Pilih Penyuluh 3" value="" />
+                  {penyuluhList.map((user) => (
+                    <Picker.Item key={user.id + '_3'} label={user.name} value={user.id} />
+                  ))}
+                </Picker>
+              </View>
+            )}
+
+            <TouchableOpacity style={styles.addWilayahButton} onPress={toggleAdditionalPicker}>
+              <Text style={styles.addWilayahText}>
+                {showAdditionalPicker ? 'Hapus Penyuluh' : 'Tambah Penyuluh'}
+              </Text>
+              <MaterialCommunityIcons
+                name={showAdditionalPicker ? 'minus' : 'plus'}
+                size={24}
+                color="white"
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+              <Text style={styles.submitText}>Simpan</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
+  );
+};
 
 const styles = StyleSheet.create({
   scrollContainer: {
@@ -327,4 +339,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Editwilayah;
+export default EditWilayah;

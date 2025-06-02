@@ -25,7 +25,7 @@ export default function TabLayout() {
         }),
         tabBarIconStyle: {
           marginBottom: -10, 
-          top: '5%',       // Vertikal 
+          top: '5%',       
           transform: [
             { translateX: 0 },  
             { translateY: -13 }, 
@@ -34,7 +34,7 @@ export default function TabLayout() {
       }}
     >
         <Tabs.Screen
-          name="dashboard"
+          name="dbkepala"
           options={{
             title: 'Dashboard',
             tabBarIcon: ({ color }) => (
@@ -43,7 +43,7 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="wilayahkerja"
+          name="wkkepala"
           options={{
             title: 'Wilayah',
             tabBarIcon: ({ color }) => <MaterialIcons name="people-alt" size={24} color={color} />,

@@ -113,6 +113,11 @@ export default class Wilayah extends  Component<{}, {}> {
   };
 
   handleEdit = (wilayah: WilayahData) => {
+    if (!wilayah.id) {
+      Alert.alert('Error', 'ID data tidak valid.');
+    return;
+    }
+        console.log('Mengirim ID ke edit:', wilayah.id);
     router.push({
       pathname: '/(subtabs)/editwilayah',
       params: { id: wilayah.id },
@@ -144,17 +149,19 @@ export default class Wilayah extends  Component<{}, {}> {
         </TouchableOpacity>
 
         <ScrollView contentContainerStyle={styles.body}>
-          {this.state.wilayah.map((wilayah) => (
-            <WilayahItem
-              key={wilayah.id}
-              id={wilayah.id}
-              kelurahan={wilayah.kelurahan}
-              kecamatan={wilayah.kecamatan}
-              onDelete={() => this.handleDelete(wilayah.id)}
-              onEdit={() => this.handleEdit(wilayah)}
-            />
-          ))}
-        </ScrollView>
+         {this.state.wilayah
+        .sort((a, b) => a.kecamatan.localeCompare(b.kecamatan)) // sort berdasarkan abjad kecamatan
+        .map((wilayah) => (
+        <WilayahItem
+        key={wilayah.id}
+        id={wilayah.id}
+        kelurahan={wilayah.kelurahan}
+        kecamatan={wilayah.kecamatan}
+        onDelete={() => this.handleDelete(wilayah.id)}
+        onEdit={() => this.handleEdit(wilayah)}
+        />
+       ))}
+      </ScrollView>
 
           <LogoutModal
           visible={this.state.modalVisible}

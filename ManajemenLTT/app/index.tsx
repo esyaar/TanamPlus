@@ -34,15 +34,16 @@ export default class LoginScreen extends Component<{}, State> {
 
   redirectByRole(role: string) {
     switch (role) {
+      case 'kepalabpp':
+        router.replace('/(tabs)/Kepala/dbkepala');
+        break;
       case 'admin':
         router.replace('/Admin/dashboard');
         break;
       case 'penyuluh':
         router.replace('/Penyuluh/homepage');
         break;
-      case 'kepalabpp':
-        router.replace('/Admin/dashboard');
-        break;
+
       default:
         Alert.alert('Error', 'Role tidak dikenali');
     }
@@ -124,8 +125,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    fontFamily: 'Lexend',
+    fontFamily: 'Lexend4',
     color: '#fff',
   },
   subtitle: {
@@ -163,9 +163,8 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontWeight: 'bold',
     textAlign: 'center',
-    fontFamily: 'Lexend',
+    fontFamily: 'Lexend4',
     fontSize: 20,
   },
 });

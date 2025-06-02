@@ -29,11 +29,10 @@ const EditUser: React.FC = () => {
 
   const { id } = useLocalSearchParams(); // Get the user ID from the URL parameters
 
-  // Effect to fetch user data when the component mounts or ID changes
   useEffect(() => {
     const fetchUserData = async () => {
       if (!id) {
-        setError('User ID not found.');
+        setError('User ID tidak ditemukan.');
         setLoading(false);
         return;
       }
@@ -148,7 +147,7 @@ const EditUser: React.FC = () => {
             />
 
             <TextInput
-              placeholder="Password (Leave blank to keep current)"
+              placeholder="Enter New Password"
               style={styles.inputBox2}
               value={password}
               secureTextEntry
@@ -209,8 +208,8 @@ const styles = StyleSheet.create({
   headerText: {
     marginLeft: 5,
     color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 18, // Increased font size for better readability
+    fontFamily: 'Lexend4',
+    fontSize: 16, 
   },
   button: {
     marginRight: 10,
@@ -227,6 +226,7 @@ const styles = StyleSheet.create({
   inputBox2: {
     backgroundColor: '#9FC2A8',
     borderRadius: 13,
+    fontFamily: 'Lexend3',
     paddingLeft: 20,
     marginBottom: 10,
     width: '100%', // Use percentage for responsiveness
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     color: '#333', // Darker text color for better contrast
   },
   picker: {
-    color: '#333', // Text color for picker items
+    color: '#333',
   },
   submitButton: {
     backgroundColor: '#40744E',
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   submitText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Lexend4',
     fontSize: 16,
   },
   loadingContainer: {
@@ -258,6 +258,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
+    fontFamily: 'Lexend3',
     color: '#555',
   },
   errorContainer: {
@@ -270,6 +271,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     color: 'red',
+    fontFamily: 'Lexend3',
     textAlign: 'center',
     marginBottom: 20,
   },
