@@ -1,17 +1,22 @@
 import React, { Component } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image  } from 'react-native';
 import { router } from 'expo-router';
-import LogoutModal from '@/components/ui/modalout'; 
+import LogoutModal from '@/components/ui/modalout';
+import { fetchLttDataOnce, LttData } from '@/services/dataService';
+
 
 interface State {
   modalVisible: boolean;
+  lastInputData: LttData | null;
 }
 
 class Homepage extends Component<{}, State> {
   [x: string]: any;
   state: State = {
     modalVisible: false,
+    lastInputData: null,
   };
+  
 
   handleNavigate = () => {
     router.replace('/(subtabs)/tambah');
@@ -24,6 +29,22 @@ class Homepage extends Component<{}, State> {
   closeModal = () => {
     this.setState({ modalVisible: false });
   };
+
+  componentDidMount() {
+    this.loadLastInput();
+  }
+  
+  loadLastInput = async () => {
+    try {
+      const data = await fetchLttDataOnce();
+      if (data.length > 0) {
+        this.setState({ lastInputData: data[0] }); // Data pertama = data terbaru
+      }
+    } catch (error) {
+      console.error('Gagal memuat data input terakhir:', error);
+    }
+  };
+  
 
   render() {
     return (
@@ -42,14 +63,32 @@ class Homepage extends Component<{}, State> {
           </Text>
 
           <View style={styles.card1}> 
-            <Image source={require('@/assets/ikon/image.png')}style={styles.image}/>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>Input Terakhir</Text>
-              <Text style={styles.cardSubtitle}>Selasa 05/04/2025</Text>
-              <Text style={styles.cardText}>Komoditas Jagung | Non Sawah</Text>
-              <Text style={styles.cardText}>Luas Tambah Tanam Harian 10 Ha</Text>
-              </View>
-          </View>
+  <Image source={require('@/assets/ikon/image.png')} style={styles.image} />
+  <View style={styles.cardContent}>
+    <Text style={styles.cardTitle}>Input Terakhir</Text>
+    {this.state.lastInputData ? (
+      <>
+        <Text style={styles.cardSubtitle}>
+          {this.state.lastInputData.tanggalLaporan.toLocaleDateString('id-ID', {
+            weekday: 'long',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          })}
+        </Text>
+        <Text style={styles.cardText}>
+          Komoditas {this.state.lastInputData.komoditas} | {this.state.lastInputData.jenisLahan}
+        </Text>
+        <Text style={styles.cardText}>
+          Luas Tambah Tanam Harian {this.state.lastInputData.luasTambahTanam} Ha
+        </Text>
+      </>
+    ) : (
+      <Text style={styles.cardText}>Belum ada data</Text>
+    )}
+  </View>
+</View>
+
 
           <View style={styles.card2}>
             <View style={styles.rowTop}>

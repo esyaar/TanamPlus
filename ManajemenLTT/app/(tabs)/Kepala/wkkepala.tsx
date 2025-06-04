@@ -12,16 +12,19 @@ import { router } from 'expo-router';
 import { Feather, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import LogoutModal from '@/components/ui/modalout';
 import { db } from '@/services/firebaseConfig';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import {
   deleteWilayah,
   WilayahData,
   getwWilayahId,
 } from '@/services/wilayahService';
+import { getCurrentUser } from '@/services/userService'; // Tambahan impor
 
 interface State {
   wilayah: WilayahData[];
   modalVisible: boolean;
+  userRole: string | null;    // Tambahan untuk role pengguna
+  userWilayah: string | null; // Tambahan untuk wilayah pengguna
 }
 
 type WilayahItemProps = {
@@ -65,18 +68,50 @@ class WilayahItem extends Component<WilayahItemProps> {
   }
 }
 
-export default class Wilayah extends  Component<{}, {}> {
-  state = {
+export default class Wilayah extends Component<{}, State> {
+  state: State = {
     wilayah: [],
     modalVisible: false,
+    userRole: null,    // Inisialisasi
+    userWilayah: null, // Inisialisasi
   };
 
   unsubscribe: (() => void) | null = null;
 
   componentDidMount() {
-    const wilayahCollection = collection(db, 'wilayah');
+    this.fetchCurrentUser();
+  }
+
+  fetchCurrentUser = async () => {
+    const currentUser = await getCurrentUser();
+    if (currentUser) {
+      this.setState({
+        userRole: currentUser.role,
+        userWilayah: currentUser.wilayah,
+      }, () => {
+        this.fetchWilayahData();
+      });
+    } else {
+      console.error('Pengguna tidak ditemukan');
+      Alert.alert('Error', 'Silakan login terlebih dahulu');
+      router.replace('./index');
+    }
+  };
+
+  fetchWilayahData = () => {
+    const { userRole, userWilayah } = this.state;
+    let wilayahQuery;
+
+    if (userRole === 'admin') {
+      wilayahQuery = collection(db, 'wilayah');
+    } else if (userRole === 'kepalabpp' && userWilayah) {
+      wilayahQuery = query(collection(db, 'wilayah'), where('kecamatan', '==', userWilayah));
+    } else {
+      wilayahQuery = collection(db, 'wilayah'); // Default ke semua data jika role tidak valid
+    }
+
     this.unsubscribe = onSnapshot(
-      wilayahCollection,
+      wilayahQuery,
       (snapshot) => {
         const wilayahData = snapshot.docs.map((doc) => ({
           id: doc.id,
@@ -88,7 +123,7 @@ export default class Wilayah extends  Component<{}, {}> {
         console.error('Gagal memuat data wilayah:', error);
       }
     );
-  }
+  };
 
   componentWillUnmount() {
     this.unsubscribe?.();
@@ -113,6 +148,11 @@ export default class Wilayah extends  Component<{}, {}> {
   };
 
   handleEdit = (wilayah: WilayahData) => {
+    if (!wilayah.id) {
+      Alert.alert('Error', 'ID data tidak valid.');
+      return;
+    }
+    console.log('Mengirim ID ke edit:', wilayah.id);
     router.push({
       pathname: '/(subtabs)/editwilayah',
       params: { id: wilayah.id },
@@ -133,9 +173,9 @@ export default class Wilayah extends  Component<{}, {}> {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerText}>Wilayah Kerja</Text>
-            <TouchableOpacity onPress={this.openModal}>
+          <TouchableOpacity onPress={this.openModal}>
             <Image source={require('@/assets/ikon/OUT.png')} style={styles.out} />
-            </TouchableOpacity>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.addWilayahButton} onPress={this.handleAddWilayah}>
@@ -144,30 +184,29 @@ export default class Wilayah extends  Component<{}, {}> {
         </TouchableOpacity>
 
         <ScrollView contentContainerStyle={styles.body}>
-         {this.state.wilayah
-        .sort((a, b) => a.kecamatan.localeCompare(b.kecamatan)) // sort berdasarkan abjad kecamatan
-        .map((wilayah) => (
-        <WilayahItem
-        key={wilayah.id}
-        id={wilayah.id}
-        kelurahan={wilayah.kelurahan}
-        kecamatan={wilayah.kecamatan}
-        onDelete={() => this.handleDelete(wilayah.id)}
-        onEdit={() => this.handleEdit(wilayah)}
-        />
-       ))}
-      </ScrollView>
+          {this.state.wilayah
+            .sort((a, b) => a.kecamatan.localeCompare(b.kecamatan))
+            .map((wilayah) => (
+              <WilayahItem
+                key={wilayah.id}
+                id={wilayah.id}
+                kelurahan={wilayah.kelurahan}
+                kecamatan={wilayah.kecamatan}
+                onDelete={() => this.handleDelete(wilayah.id)}
+                onEdit={() => this.handleEdit(wilayah)}
+              />
+            ))}
+        </ScrollView>
 
-          <LogoutModal
+        <LogoutModal
           visible={this.state.modalVisible}
           onClose={this.closeModal}
           onConfirm={this.confirmLogout}
-          />
+        />
       </View>
     );
   }
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -179,16 +218,16 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 30,
-    flexDirection: 'row',              
-    justifyContent: 'space-between',  
-    alignItems: 'center',              
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerText: {
     color: '#fff',
     fontFamily: 'Lexend4',
     fontSize: 25,
   },
-  out:{
+  out: {
     width: 40,
     height: 40,
   },

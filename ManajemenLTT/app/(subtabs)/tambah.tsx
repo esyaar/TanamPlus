@@ -6,6 +6,8 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { addLtt } from '@/services/dataService';
+import { subscribeToWilayahByPenyuluh, WilayahData } from '@/services/wilayahService';
+import { getCurrentUser } from '@/services/authService';
 
 export interface CreateLttData {
   wilayah_id: string;
@@ -27,6 +29,8 @@ type State = {
   komoditas: string;
   jenisLahan: string;
   luasTambahTanam: string;
+  wilayahData: WilayahData[];
+  filteredKelurahan: string[];
 };
 
 class InputLTTForm extends Component<{}, State> {
@@ -39,6 +43,41 @@ class InputLTTForm extends Component<{}, State> {
     komoditas: '',
     jenisLahan: '',
     luasTambahTanam: '',
+    wilayahData: [],
+    filteredKelurahan: [],
+  };
+
+  unsubscribe: (() => void) | null = null;
+
+  async componentDidMount() {
+    try {
+      const user = await getCurrentUser();
+      console.log('user:', user); // Debug log
+      this.unsubscribe = subscribeToWilayahByPenyuluh(user?.id || null, (items, error) => {
+        if (error) {
+          Alert.alert('Error', error);
+          return;
+        }
+        console.log('wilayahData:', items); // Debug log
+        this.setState({ wilayahData: items });
+      });
+    } catch (error) {
+      console.error('Gagal mendapatkan pengguna:', error);
+      Alert.alert('Error', 'Gagal mendapatkan data pengguna. Silakan login kembali.');
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+    }
+  }
+
+  handleKecamatanChange = (kecamatan: string) => {
+    const filteredKelurahan = this.state.wilayahData
+      .filter((item) => item.kecamatan === kecamatan)
+      .map((item) => item.kelurahan);
+    this.setState({ kecamatan, kelurahan: '', filteredKelurahan });
   };
 
   handleSubmit = async () => {
@@ -52,27 +91,30 @@ class InputLTTForm extends Component<{}, State> {
       luasTambahTanam,
     } = this.state;
 
-    if (
-      !kecamatan ||
-      !kelurahan ||
-      !bpp ||
-      !komoditas ||
-      !jenisLahan ||
-      !luasTambahTanam
-    ) {
+    if (!kecamatan || !kelurahan || !bpp || !komoditas || !jenisLahan || !luasTambahTanam) {
       Alert.alert('Validasi', 'Mohon lengkapi semua data sebelum mengirim.');
       return;
     }
 
+    const luasTambahTanamNum = parseFloat(luasTambahTanam);
+    if (isNaN(luasTambahTanamNum)) {
+      Alert.alert('Validasi', 'Luas Tambah Tanam harus berupa angka valid.');
+      return;
+    }
+
+    const wilayah = this.state.wilayahData.find(
+      (item) => item.kecamatan === kecamatan && item.kelurahan === kelurahan
+    );
+
     const payload: CreateLttData = {
-      wilayah_id: kecamatan,
+      wilayah_id: wilayah?.id || kecamatan,
       bpp,
       tanggalLaporan,
       kecamatan,
       kelurahan,
       komoditas,
       jenisLahan,
-      luasTambahTanam: parseFloat(luasTambahTanam),
+      luasTambahTanam: luasTambahTanamNum,
     };
 
     try {
@@ -80,7 +122,6 @@ class InputLTTForm extends Component<{}, State> {
       console.log('Data LTT berhasil ditambahkan dengan ID:', newId);
       Alert.alert('Sukses', 'Data berhasil ditambahkan!');
 
-      // Reset form
       this.setState({
         kecamatan: '',
         kelurahan: '',
@@ -89,9 +130,9 @@ class InputLTTForm extends Component<{}, State> {
         komoditas: '',
         jenisLahan: '',
         luasTambahTanam: '',
+        filteredKelurahan: [],
       });
 
-      // Navigate back
       router.replace('/(tabs)/Penyuluh/homepage');
     } catch (error) {
       console.error('Gagal menambahkan data LTT:', error);
@@ -113,13 +154,14 @@ class InputLTTForm extends Component<{}, State> {
       komoditas,
       jenisLahan,
       luasTambahTanam,
+      wilayahData,
+      filteredKelurahan,
     } = this.state;
 
+    const kecamatanOptions = Array.from(new Set(wilayahData.map((item) => item.kecamatan)));
+
     return (
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
             <View style={styles.container}>
@@ -133,61 +175,31 @@ class InputLTTForm extends Component<{}, State> {
               <Text style={styles.sectionTitle}>Wilayah Kerja</Text>
 
               <View style={styles.inputBox}>
-              <Picker
-                selectedValue={kecamatan}
-                onValueChange={(value) => this.setState({ kecamatan: value })}
-                itemStyle={{ fontFamily: 'Lexend3', fontSize: 13 }}
-              >
-                <Picker.Item label="Kecamatan" value="" />
-                  <Picker.Item label="Dempo Selatan" value="Dempo Selatan" />
-                  <Picker.Item label="Dempo Tengah" value="Dempo Tengah" />
-                  <Picker.Item label="Dempo Utara" value="Dempo Utara" />
-                  <Picker.Item label="Pagar Alam Selatan" value="Pagar Alam Selatan" />
-                  <Picker.Item label="Pagar Alam Utara" value="Pagar Alam Utara" />
-              </Picker>
-            </View>
+                <Picker
+                  selectedValue={kecamatan}
+                  onValueChange={this.handleKecamatanChange}
+                  style={styles.picker}
+                  itemStyle={styles.pickerItem}
+                >
+                  <Picker.Item label="Pilih Kecamatan" value="" />
+                  {kecamatanOptions.map((kec) => (
+                    <Picker.Item key={kec} label={kec} value={kec} />
+                  ))}
+                </Picker>
+              </View>
 
               <View style={styles.inputBox}>
                 <Picker
                   selectedValue={kelurahan}
                   onValueChange={(value) => this.setState({ kelurahan: value })}
+                  style={styles.picker}
+                  itemStyle={styles.pickerItem}
+                  enabled={filteredKelurahan.length > 0}
                 >
-                  <Picker.Item label="Kelurahan" value="" />
-                  <Picker.Item label="Agung Lawongan" value="Agung Lawongan" />
-                  <Picker.Item label="Alun Dua" value="Alun Dua" />
-                  <Picker.Item label="Atung Bungsu" value="Atung Bungsu" />
-                  <Picker.Item label="Bangun Jaya" value="Bangun Jaya" />
-                  <Picker.Item label="Bangun Rejo" value="Bangun Rejo" />
-                  <Picker.Item label="Beringin Jaya" value="Beringin Jaya" />
-                  <Picker.Item label="Besemah Serasan" value="Besemah Serasan" />
-                  <Picker.Item label="Bumi Agung" value="Bumi Agung" />
-                  <Picker.Item label="Burung Dinang" value="Burung Dinang" />
-                  <Picker.Item label="Candi Jaya" value="Candi Jaya" />
-                  <Picker.Item label="Curup Jare" value="Curup Jare" />
-                  <Picker.Item label="Dempo Makmur" value="Dempo Makmur" />
-                  <Picker.Item label="Gunung Dempo" value="Gunung Dempo" />
-                  <Picker.Item label="Jangkar Mas" value="Jangkar Mas" />
-                  <Picker.Item label="Jokoh" value="Jokoh" />
-                  <Picker.Item label="Kance Diwe" value="Kance Diwe" />
-                  <Picker.Item label="Karang Dalo" value="Karang Dalo" />
-                  <Picker.Item label="Kusipan Babas" value="Kusipan Babas" />
-                  <Picker.Item label="Lubuk Buntak" value="Lubuk Buntak" />
-                  <Picker.Item label="Muara Siban" value="Muara Siban" />
-                  <Picker.Item label="Nendagung" value="Nendagung" />
-                  <Picker.Item label="Padang Temu" value="Padang Temu" />
-                  <Picker.Item label="Pagar Wangi" value="Pagar Wangi" />
-                  <Picker.Item label="Pagaralam" value="Pagaralam" />
-                  <Picker.Item label="Pelang Kenidai" value="Pelang Kenidai" />
-                  <Picker.Item label="Penjalang" value="Penjalang" />
-                  <Picker.Item label="Prabu Dipo" value="Prabu Dipo" />
-                  <Picker.Item label="Reba Tinggi" value="Reba Tinggi" />
-                  <Picker.Item label="Selibar" value="Selibar" />
-                  <Picker.Item label="Sidorejo" value="Sidorejo" />
-                  <Picker.Item label="Sukorejo" value="Sukorejo" />
-                  <Picker.Item label="Tanjung Payang" value="Tanjung Payang" />
-                  <Picker.Item label="Tebat Giri Indah" value="Tebat Giri Indah" />
-                  <Picker.Item label="Tumbak Ulas" value="Tumbak Ulas" />
-                  <Picker.Item label="Ulu Rurah" value="Ulu Rurah" />
+                  <Picker.Item label="Pilih Kelurahan" value="" />
+                  {filteredKelurahan.map((kel) => (
+                    <Picker.Item key={kel} label={kel} value={kel} />
+                  ))}
                 </Picker>
               </View>
 
@@ -200,11 +212,8 @@ class InputLTTForm extends Component<{}, State> {
 
               <Text style={styles.sectionTitle}>Data Laporan</Text>
 
-              <TouchableOpacity
-                onPress={() => this.setState({ showDatePicker: true })}
-                style={styles.date}
-              >
-                <Text style={styles.datetext}>{tanggalLaporan.toDateString()}</Text>
+              <TouchableOpacity onPress={() => this.setState({ showDatePicker: true })} style={styles.date}>
+                <Text style={styles.dateText}>{tanggalLaporan.toDateString()}</Text>
               </TouchableOpacity>
 
               {showDatePicker && (
@@ -223,8 +232,10 @@ class InputLTTForm extends Component<{}, State> {
                 <Picker
                   selectedValue={komoditas}
                   onValueChange={(value) => this.setState({ komoditas: value })}
+                  style={styles.picker}
+                  itemStyle={styles.pickerItem}
                 >
-                  <Picker.Item label="Jenis Komoditas Pangan" value="" />
+                  <Picker.Item label="Pilih Jenis Komoditas Pangan" value="" />
                   <Picker.Item label="Padi" value="Padi" />
                   <Picker.Item label="Jagung" value="Jagung" />
                   <Picker.Item label="Kedelai" value="Kedelai" />
@@ -244,8 +255,10 @@ class InputLTTForm extends Component<{}, State> {
                 <Picker
                   selectedValue={jenisLahan}
                   onValueChange={(value) => this.setState({ jenisLahan: value })}
+                  style={styles.picker}
+                  itemStyle={styles.pickerItem}
                 >
-                  <Picker.Item label="Jenis Lahan" value="" />
+                  <Picker.Item label="Pilih Jenis Lahan" value="" />
                   <Picker.Item label="Sawah" value="Sawah" />
                   <Picker.Item label="Non-Sawah" value="Non-Sawah" />
                 </Picker>
@@ -306,35 +319,40 @@ const styles = StyleSheet.create({
   inputBox: {
     backgroundColor: '#9FC2A8',
     borderRadius: 10,
-    alignContent: 'center',
+    marginBottom: 7,
+    width: 345,
+    height: 50,
+  },
+  inputBox2: {
+    backgroundColor: '#9FC2A8',
+    borderRadius: 10,
+    paddingLeft: 20,
     marginBottom: 7,
     width: 345,
     height: 50,
     fontFamily: 'Lexend3',
     fontSize: 13,
   },
-  inputBox2: {
-    backgroundColor: '#9FC2A8',
-    borderRadius: 10,
-    alignContent: 'center',
-    paddingLeft: 20,
-    marginBottom: 7,
-    width: 345,
-    height: 50,
+  picker: {
+    width: '100%',
+    height: '100%',
+  },
+  pickerItem: {
     fontFamily: 'Lexend3',
     fontSize: 13,
   },
   date: {
     backgroundColor: '#9FC2A8',
     borderRadius: 10,
-    alignContent: 'center',
     marginBottom: 7,
     width: 345,
     height: 50,
+    justifyContent: 'center',
   },
-  datetext: {
+  dateText: {
     paddingLeft: 20,
-    paddingTop: 15,
+    fontFamily: 'Lexend3',
+    fontSize: 13,
   },
   submitButton: {
     backgroundColor: '#40744E',
@@ -346,7 +364,6 @@ const styles = StyleSheet.create({
   submitText: {
     color: '#fff',
     fontFamily: 'Lexend4',
-
     fontSize: 16,
   },
 });

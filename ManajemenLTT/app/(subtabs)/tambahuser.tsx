@@ -23,6 +23,7 @@ export interface CreateUserProfileData {
   username: string;
   password: string;
   role: string;
+  wilayah: string;
 }
 
 type State = {
@@ -31,6 +32,7 @@ type State = {
   username: string;
   password: string;
   role: string;
+  wilayah: string;
 };
 
 class AddUser extends Component<{}, State> {
@@ -40,21 +42,23 @@ class AddUser extends Component<{}, State> {
     username: '',
     password: '',
     role: '',
+    wilayah: '',
   };
 
   handleSubmit = async () => {
-    const { name, email, username, password, role } = this.state;
+    const { name, email, username, password, role, wilayah } = this.state;
 
-      if (
-        !name ||
-        !email ||
-        !username ||
-        !password ||
-        !role
-      ) {
-        Alert.alert('Validasi', 'Mohon lengkapi semua data sebelum mengirim.');
-        return;
-      }
+    if (
+      !name ||
+      !email ||
+      !username ||
+      !password ||
+      !role ||
+      (role === 'kepalabpp' && !wilayah)
+    ) {
+      Alert.alert('Validasi', 'Mohon lengkapi semua data sebelum mengirim.');
+      return;
+    }
 
     const payload: CreateUserProfileData = {
       name,
@@ -62,13 +66,13 @@ class AddUser extends Component<{}, State> {
       username,
       password,
       role,
+      wilayah: role === 'kepalabpp' ? wilayah : '',
     };
 
     try {
       const newId = await addUser(payload);
-      console.log('Data LTT berhasil ditambahkan dengan ID:', newId);
-      Alert.alert('Sukses', 'Data berhasil ditambahkan!'); 
-      
+      console.log('Data User berhasil ditambahkan:', newId);
+      Alert.alert('Sukses', 'Data berhasil ditambahkan!');
 
       this.setState({
         name: '',
@@ -76,17 +80,17 @@ class AddUser extends Component<{}, State> {
         username: '',
         password: '',
         role: '',
+        wilayah: '',
       });
       router.replace('/Admin/user');
-  }
-  catch (error) {
-  console.error('Gagal menambahkan data user:', error);
-   Alert.alert('Error', 'Gagal menambahkan data. Silakan coba lagi nanti.');
-   }
+    } catch (error) {
+      console.error('Gagal menambahkan data user:', error);
+      Alert.alert('Error', 'Gagal menambahkan data. Silakan coba lagi nanti.');
+    }
   };
 
   render() {
-    const { name, email, username, password, role } = this.state;
+    const { name, email, username, password, role, wilayah } = this.state;
 
     return (
       <KeyboardAvoidingView
@@ -135,7 +139,7 @@ class AddUser extends Component<{}, State> {
               <View style={styles.inputBox}>
                 <Picker
                   selectedValue={role}
-                  onValueChange={(value) => this.setState({ role: value })}
+                  onValueChange={(value) => this.setState({ role: value, wilayah: '' })}
                 >
                   <Picker.Item label="Role" value="" />
                   <Picker.Item label="Penyuluh" value="penyuluh" />
@@ -143,6 +147,22 @@ class AddUser extends Component<{}, State> {
                   <Picker.Item label="Admin" value="admin" />
                 </Picker>
               </View>
+
+              {role === 'kepalabpp' && (
+                <View style={styles.inputBox}>
+                  <Picker
+                    selectedValue={wilayah}
+                    onValueChange={(value) => this.setState({ wilayah: value })}
+                  >
+                    <Picker.Item label="Kecamatan" value="" />
+                    <Picker.Item label="Dempo Selatan" value="Dempo Selatan" />
+                    <Picker.Item label="Dempo Tengah" value="Dempo Tengah" />
+                    <Picker.Item label="Dempo Utara" value="Dempo Utara" />
+                    <Picker.Item label="Pagar Alam Selatan" value="Pagar Alam Selatan" />
+                    <Picker.Item label="Pagar Alam Utara" value="Pagar Alam Utara" />
+                  </Picker>
+                </View>
+              )}
 
               <TouchableOpacity style={styles.submitButton} onPress={this.handleSubmit}>
                 <Text style={styles.submitText}>Tambahkan</Text>
@@ -170,11 +190,6 @@ const styles = StyleSheet.create({
   inner: {
     flex: 1,
   },
-  container: {
-    padding: 20,
-    backgroundColor: '#fff',
-    flexGrow: 1,
-  },
   header: {
     backgroundColor: '#40744E',
     padding: 15,
@@ -186,7 +201,7 @@ const styles = StyleSheet.create({
   headerText: {
     marginLeft: 5,
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Lexend4',
   },
   button: {
     marginRight: 10,
@@ -196,6 +211,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     justifyContent: 'center',
     marginBottom: 10,
+    fontFamily: 'Lexend3',
     width: 345,
     height: 50,
   },
@@ -203,6 +219,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#9FC2A8',
     borderRadius: 13,
     paddingLeft: 20,
+    fontFamily: 'Lexend3',
     marginBottom: 10,
     width: 345,
     height: 50,
@@ -212,11 +229,11 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 300,
+    marginTop: 20,
   },
   submitText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontFamily: 'Lexend4',
     fontSize: 16,
   },
 });

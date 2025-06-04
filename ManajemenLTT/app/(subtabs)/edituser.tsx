@@ -10,8 +10,8 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
-  ActivityIndicator, // Import ActivityIndicator for loading state
-  Alert, // Import Alert for displaying messages
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
@@ -22,12 +22,14 @@ const EditUser: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState(''); // Note: Password won't be pre-filled for security
+  const [password, setPassword] = useState('');
   const [role, setRole] = useState('');
-  const [loading, setLoading] = useState(true); // State for loading data
-  const [error, setError] = useState<string | null>(null); // State for error messages
+  const [wilayah, setWilayah] = useState(''); // Added wilayah state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { id } = useLocalSearchParams(); // Get the user ID from the URL parameters
+  const { id } = useLocalSearchParams();
+  console.log('ID yang diterima:', id);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -38,12 +40,13 @@ const EditUser: React.FC = () => {
       }
       try {
         setLoading(true);
-        const userData: UserData = await getUserById(id as string); // Fetch user data by ID
-        setName(userData.name);
-        setEmail(userData.email);
-        setUsername(userData.username);
-        setRole(userData.role);
-        // Do NOT set password here for security reasons. User will enter new password if needed.
+        const userData: UserData = await getUserById(id as string);
+        console.log('User data:', userData);
+        setName(userData.name || '');
+        setEmail(userData.email || '');
+        setUsername(userData.username || '');
+        setRole(userData.role || '');
+        setWilayah(userData.wilayah || ''); // Set wilayah from fetched data
       } catch (err) {
         console.error('Failed to fetch user data:', err);
         setError('Failed to load user data. Please try again.');
@@ -53,7 +56,7 @@ const EditUser: React.FC = () => {
     };
 
     fetchUserData();
-  }, [id]); // Re-run effect if 'id' changes
+  }, [id]);
 
   const handleSubmit = async () => {
     if (!id) {
@@ -61,28 +64,33 @@ const EditUser: React.FC = () => {
       return;
     }
 
-    // Prepare data for update. Only include password if it's not empty.
+    if (!name || !email || !username || !role || (role === 'kepalabpp' && !wilayah)) {
+      Alert.alert('Validasi', 'Mohon lengkapi semua data sebelum mengirim.');
+      return;
+    }
+
     const updateData: Partial<UserData> = {
       name,
       email,
       username,
-      role: role as 'admin' | 'penyuluh' | 'kepalabpp', // Cast role to the correct type
+      role: role as 'admin' | 'penyuluh' | 'kepalabpp',
+      wilayah: role === 'kepalabpp' ? wilayah : '', // Include wilayah for kepalabpp
     };
 
     if (password) {
-      updateData.password = password; // Only update password if a new one is entered
+      updateData.password = password;
     }
 
     try {
-      setLoading(true); // Show loading indicator during submission
-      await editUserById(id as string, updateData); // Call the update function
-      Alert.alert('Success', 'User data updated successfully!');
-      router.replace('/Admin/user'); // Navigate back to the user list
+      setLoading(true);
+      await editUserById(id as string, updateData);
+      Alert.alert('Berhasil', 'Data User Berhasil di Update!');
+      router.replace('/Admin/user');
     } catch (err) {
       console.error('Failed to update user:', err);
-      Alert.alert('Error', 'Failed to update user data. Please try again.');
+      Alert.alert('Error', 'Gagal Melakukan Update Data User.');
     } finally {
-      setLoading(false); // Hide loading indicator
+      setLoading(false);
     }
   };
 
@@ -90,7 +98,7 @@ const EditUser: React.FC = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#40744E" />
-        <Text style={styles.loadingText}>Loading user data...</Text>
+        <Text style={styles.loadingText}>Memuat Data User...</Text>
       </View>
     );
   }
@@ -157,8 +165,12 @@ const EditUser: React.FC = () => {
             <View style={styles.inputBox}>
               <Picker
                 selectedValue={role}
-                onValueChange={(value) => setRole(value)}
-                style={styles.picker} // Apply style to picker
+                onValueChange={(value) => {
+                  console.log('Selected role:', value);
+                  setRole(value);
+                  setWilayah(''); // Reset wilayah when role changes
+                }}
+                style={styles.picker}
               >
                 <Picker.Item label="Select Role" value="" />
                 <Picker.Item label="Penyuluh" value="penyuluh" />
@@ -166,6 +178,23 @@ const EditUser: React.FC = () => {
                 <Picker.Item label="Admin" value="admin" />
               </Picker>
             </View>
+
+            {role === 'kepalabpp' && (
+              <View style={styles.inputBox}>
+                <Picker
+                  selectedValue={wilayah}
+                  onValueChange={(value) => setWilayah(value)}
+                  style={styles.picker}
+                >
+                  <Picker.Item label="Kecamatan" value="" />
+                  <Picker.Item label="Dempo Selatan" value="Dempo Selatan" />
+                  <Picker.Item label="Dempo Tengah" value="Dempo Tengah" />
+                  <Picker.Item label="Dempo Utara" value="Dempo Utara" />
+                  <Picker.Item label="Pagar Alam Selatan" value="Pagar Alam Selatan" />
+                  <Picker.Item label="Pagar Alam Utara" value="Pagar Alam Utara" />
+                </Picker>
+              </View>
+            )}
 
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
               <Text style={styles.submitText}>Simpan Perubahan</Text>
@@ -192,11 +221,6 @@ const styles = StyleSheet.create({
   inner: {
     flex: 1,
   },
-  container: {
-    padding: 20,
-    backgroundColor: '#fff',
-    flexGrow: 1,
-  },
   header: {
     backgroundColor: '#40744E',
     padding: 15,
@@ -209,7 +233,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     color: '#fff',
     fontFamily: 'Lexend4',
-    fontSize: 16, 
+    fontSize: 16,
   },
   button: {
     marginRight: 10,
@@ -219,9 +243,9 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     justifyContent: 'center',
     marginBottom: 10,
-    width: '100%', // Use percentage for responsiveness
+    width: '100%',
     height: 50,
-    overflow: 'hidden', // Ensure picker content stays within bounds
+    overflow: 'hidden',
   },
   inputBox2: {
     backgroundColor: '#9FC2A8',
@@ -229,9 +253,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Lexend3',
     paddingLeft: 20,
     marginBottom: 10,
-    width: '100%', // Use percentage for responsiveness
+    width: '100%',
     height: 50,
-    color: '#333', // Darker text color for better contrast
+    color: '#333',
   },
   picker: {
     color: '#333',
@@ -241,8 +265,8 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingVertical: 15,
     alignItems: 'center',
-    marginTop: 30, // Adjusted margin top to be more dynamic
-    width: '100%', // Use percentage for responsiveness
+    marginTop: 30,
+    width: '100%',
   },
   submitText: {
     color: '#fff',

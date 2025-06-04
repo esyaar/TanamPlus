@@ -200,10 +200,11 @@ const styles = StyleSheet.create({
   addWilayahButton: {
     backgroundColor: '#40744E',
     borderRadius: 8,
-    paddingVertical: 14,
+    paddingVertical: 15,
     paddingHorizontal: 20,
     marginHorizontal: 20,
     marginTop: 20,
+    marginBottom:10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -214,7 +215,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Lexend4',
   },
   body: {
-    padding: 20,
+    paddingTop: 10,
+    paddingBottom:20,
+    paddingHorizontal: 20,
   },
   card: {
     backgroundColor: '#A5C8B6',

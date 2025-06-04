@@ -24,11 +24,11 @@ export default function TabLayout() {
           default: {},
         }),
         tabBarIconStyle: {
-          marginBottom: -10, 
+          marginBottom: -15, 
           top: '5%',       
           transform: [
             { translateX: 0 },  
-            { translateY: -13 }, 
+            { translateY: -16 }, 
           ],
         },
       }}

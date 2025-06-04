@@ -123,9 +123,10 @@ class AddWilayah extends Component<{}, State> {
       };
 
       const docId = await wilayahService.addWilayah(wilayahData);
-      Alert.alert('Sukses', 'Data wilayah berhasil disimpan!');
+      Alert.alert('Sukses', 'Data wilayah berhasil disimpan!', [
+        { text: 'OK', onPress: () => router.back() }, // Kembali ke halaman sebelumnya
+      ]);
       console.log('Data tersimpan dengan ID:', docId);
-      router.replace('/Admin/wilayahkerja');
     } catch (error) {
       Alert.alert('Error', 'Gagal menyimpan data wilayah. Silakan coba lagi.');
       console.error('Error saat menyimpan data:', error);
