@@ -1,11 +1,21 @@
 import React, { Component } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
-import { addLtt } from '@/services/dataService';
+import { addLtt } from '@/services/dataService'; // Assuming addLtt is updated
 import { subscribeToWilayahByPenyuluh, WilayahData } from '@/services/wilayahService';
 import { getCurrentUser } from '@/services/authService';
 
@@ -31,6 +41,7 @@ type State = {
   luasTambahTanam: string;
   wilayahData: WilayahData[];
   filteredKelurahan: string[];
+  currentUserId: string | null; // Add currentUserId to state
 };
 
 class InputLTTForm extends Component<{}, State> {
@@ -45,6 +56,7 @@ class InputLTTForm extends Component<{}, State> {
     luasTambahTanam: '',
     wilayahData: [],
     filteredKelurahan: [],
+    currentUserId: null, // Initialize currentUserId
   };
 
   unsubscribe: (() => void) | null = null;
@@ -52,15 +64,19 @@ class InputLTTForm extends Component<{}, State> {
   async componentDidMount() {
     try {
       const user = await getCurrentUser();
-      console.log('user:', user); // Debug log
-      this.unsubscribe = subscribeToWilayahByPenyuluh(user?.id || null, (items, error) => {
-        if (error) {
-          Alert.alert('Error', error);
-          return;
-        }
-        console.log('wilayahData:', items); // Debug log
-        this.setState({ wilayahData: items });
-      });
+      if (user && user.id) {
+        this.setState({ currentUserId: user.id }); // Set the current user ID
+        this.unsubscribe = subscribeToWilayahByPenyuluh(user?.id || null, (items, error) => {
+          if (error) {
+            Alert.alert('Error', error);
+            return;
+          }
+          this.setState({ wilayahData: items });
+        });
+      } else {
+        Alert.alert('Error', 'Gagal mendapatkan data pengguna. Silakan login kembali.');
+        router.replace('/index'); // Redirect to login if user not found
+      }
     } catch (error) {
       console.error('Gagal mendapatkan pengguna:', error);
       Alert.alert('Error', 'Gagal mendapatkan data pengguna. Silakan login kembali.');
@@ -89,7 +105,14 @@ class InputLTTForm extends Component<{}, State> {
       komoditas,
       jenisLahan,
       luasTambahTanam,
+      currentUserId, // Get currentUserId from state
     } = this.state;
+
+    if (!currentUserId) {
+      Alert.alert('Error', 'User not authenticated. Please log in again.');
+      router.replace('/index');
+      return;
+    }
 
     if (!kecamatan || !kelurahan || !bpp || !komoditas || !jenisLahan || !luasTambahTanam) {
       Alert.alert('Validasi', 'Mohon lengkapi semua data sebelum mengirim.');
@@ -103,10 +126,11 @@ class InputLTTForm extends Component<{}, State> {
     }
 
     const wilayah = this.state.wilayahData.find(
-      (item) => item.kecamatan === kecamatan && item.kelurahan === kelurahan
+      (item) => item.kecamatan === kecamatan && item.kelurahan === kelurahan,
     );
 
-    const payload: CreateLttData = {
+    const payload = {
+      userId: currentUserId, // Include userId in the payload
       wilayah_id: wilayah?.id || kecamatan,
       bpp,
       tanggalLaporan,

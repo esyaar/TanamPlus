@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image  } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { router } from 'expo-router';
 import LogoutModal from '@/components/ui/modalout';
-import { fetchLttDataOnce, LttData } from '@/services/dataService';
-
+import { fetchLttDataOnce, LttData } from '@/services/dataService'; 
+import { getCurrentUser } from '@/services/authService';
 
 interface State {
   modalVisible: boolean;
@@ -11,12 +11,10 @@ interface State {
 }
 
 class Homepage extends Component<{}, State> {
-  [x: string]: any;
   state: State = {
     modalVisible: false,
     lastInputData: null,
   };
-  
 
   handleNavigate = () => {
     router.replace('/(subtabs)/tambah');
@@ -33,62 +31,80 @@ class Homepage extends Component<{}, State> {
   componentDidMount() {
     this.loadLastInput();
   }
-  
+
+  // Define confirmLogout as it's used in render
+  confirmLogout = () => {
+    // Implement your logout logic here
+    console.log('User confirmed logout');
+    // Example: router.replace('/login');
+    this.closeModal(); // Close the modal after logout action
+  };
+
   loadLastInput = async () => {
     try {
-      const data = await fetchLttDataOnce();
+      // Get the current user's ID
+      const user = await getCurrentUser();
+      const userId = user?.id
+      if (!userId) {
+        console.warn('No user ID found. Cannot load user-specific data.');
+        this.setState({ lastInputData: null });
+        return;
+      }
+
+      // Fetch data, passing the userId for filtering
+      const data = await fetchLttDataOnce(userId);
       if (data.length > 0) {
-        this.setState({ lastInputData: data[0] }); // Data pertama = data terbaru
+        // Data is already sorted by date in fetchLttDataOnce, so the first is the latest
+        this.setState({ lastInputData: data[0] });
+      } else {
+        this.setState({ lastInputData: null }); // No data for this user
       }
     } catch (error) {
-      console.error('Gagal memuat data input terakhir:', error);
+      console.error('Failed to load last input data:', error);
+      this.setState({ lastInputData: null }); // Reset state on error
     }
   };
-  
 
   render() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-           <Text style={styles.headerText }>Home</Text>
-           <TouchableOpacity onPress={() => this.setState({ modalVisible: true })}>
+          <Text style={styles.headerText}>Home</Text>
+          <TouchableOpacity onPress={() => this.setState({ modalVisible: true })}>
             <Image source={require('@/assets/ikon/OUT.png')} style={styles.out} />
-            </TouchableOpacity>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.body}>
           <Text style={styles.welcome}>Selamat Datang</Text>
-          <Text style={styles.subtitle}>
-            Silahkan lakukan pelaporan data harian LTT
-          </Text>
+          <Text style={styles.subtitle}>Silahkan lakukan pelaporan data harian LTT</Text>
 
-          <View style={styles.card1}> 
-  <Image source={require('@/assets/ikon/image.png')} style={styles.image} />
-  <View style={styles.cardContent}>
-    <Text style={styles.cardTitle}>Input Terakhir</Text>
-    {this.state.lastInputData ? (
-      <>
-        <Text style={styles.cardSubtitle}>
-          {this.state.lastInputData.tanggalLaporan.toLocaleDateString('id-ID', {
-            weekday: 'long',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-          })}
-        </Text>
-        <Text style={styles.cardText}>
-          Komoditas {this.state.lastInputData.komoditas} | {this.state.lastInputData.jenisLahan}
-        </Text>
-        <Text style={styles.cardText}>
-          Luas Tambah Tanam Harian {this.state.lastInputData.luasTambahTanam} Ha
-        </Text>
-      </>
-    ) : (
-      <Text style={styles.cardText}>Belum ada data</Text>
-    )}
-  </View>
-</View>
-
+          <View style={styles.card1}>
+            <Image source={require('@/assets/ikon/image.png')} style={styles.image} />
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>Input Terakhir</Text>
+              {this.state.lastInputData ? (
+                <>
+                  <Text style={styles.cardSubtitle}>
+                    {this.state.lastInputData.tanggalLaporan.toLocaleDateString('id-ID', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                    })}
+                  </Text>
+                  <Text style={styles.cardText}>
+                    Komoditas {this.state.lastInputData.komoditas} | {this.state.lastInputData.jenisLahan}
+                  </Text>
+                  <Text style={styles.cardText}>
+                    Luas Tambah Tanam Harian {this.state.lastInputData.luasTambahTanam} Ha
+                  </Text>
+                </>
+              ) : (
+                <Text style={styles.cardText}>Belum ada data untuk pengguna ini.</Text>
+              )}
+            </View>
+          </View>
 
           <View style={styles.card2}>
             <View style={styles.rowTop}>
@@ -96,21 +112,16 @@ class Homepage extends Component<{}, State> {
               <View style={styles.textContainer}>
                 <Text style={styles.cardTitle}>Input Data Harian LTT</Text>
                 <Text style={styles.cardSubtitle}>Lakukan pendataan harian LTT</Text>
-             </View>
+              </View>
             </View>
             <TouchableOpacity style={styles.button} onPress={this.handleNavigate}>
               <Text style={styles.buttonText}>Input Data</Text>
-              </TouchableOpacity>
-            </View>
+            </TouchableOpacity>
+          </View>
         </View>
 
-          {/* Modal Logout */}
-          <LogoutModal
-          visible={this.state.modalVisible}
-          onClose={this.closeModal}
-          onConfirm={this.confirmLogout}
-          />
-          
+        {/* Modal Logout */}
+        <LogoutModal visible={this.state.modalVisible} onClose={this.closeModal} onConfirm={this.confirmLogout} />
       </View>
     );
   }
@@ -127,15 +138,14 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 20,
     paddingHorizontal: 30,
-    flexDirection: 'row',              
-    justifyContent: 'space-between',  
-    alignItems: 'center',              
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerText: {
     color: '#fff',
     fontFamily: 'Lexend4',
     fontSize: 25,
-
   },
   body: {
     padding: 20,
@@ -145,16 +155,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Lexend4',
     color: '#1A1A1A',
     paddingTop: 5,
-    paddingLeft:10,
+    paddingLeft: 10,
   },
   subtitle: {
     fontSize: 14,
     fontFamily: 'Lexend3',
     color: '#1A1A1A',
     marginBottom: 20,
-    paddingLeft:10,
+    paddingLeft: 10,
   },
-   card1: {
+  card1: {
     backgroundColor: '#E9F5EC',
     padding: 20,
     borderRadius: 10,
@@ -180,15 +190,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  out:{
+  out: {
     width: 40,
     height: 40,
-    marginRight:10,
+    marginRight: 10,
   },
   image: {
     width: 40,
     height: 40,
-    marginRight:10,
+    marginRight: 10,
   },
   cardTitle: {
     fontSize: 17,
@@ -197,7 +207,7 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 13,
-    marginBottom:10,
+    marginBottom: 10,
     fontFamily: 'Lexend3',
     color: '#1A1A1A',
   },
@@ -210,20 +220,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#40744E',
     borderRadius: 8,
     marginTop: 15,
-    marginLeft:110,
+    marginLeft: 110,
     width: 160,
     height: 35,
   },
   buttonText: {
     color: '#fff',
     fontSize: 13,
-    textAlign:'center',
-    margin:'auto',
+    textAlign: 'center',
+    margin: 'auto',
     fontFamily: 'Lexend4',
   },
-  cardContent:{
-  },
-  textContainer:{
-  },
-
+  cardContent: {},
+  textContainer: {},
 });

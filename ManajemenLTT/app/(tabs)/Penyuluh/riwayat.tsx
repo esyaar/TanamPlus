@@ -6,14 +6,15 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import LogoutModal from '@/components/ui/modalout';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore'; // Import orderBy
 import { deleteLttData, LttData } from '@/services/dataService';
 import { db } from '@/services/firebaseConfig';
+import { getCurrentUser } from '@/services/authService'; // Asumsikan getCurrentUser mengembalikan { id: string } atau null
 
 interface RiwayatItemProps {
   jenisKomoditas: string;
@@ -32,7 +33,7 @@ class RiwayatItem extends Component<RiwayatItemProps> {
         [
           { text: 'Batal', style: 'cancel' },
           { text: 'Hapus', style: 'destructive', onPress: this.props.onDelete },
-        ]
+        ],
       );
     }
   };
@@ -51,14 +52,14 @@ class RiwayatItem extends Component<RiwayatItemProps> {
             style={styles.iconButton}
             disabled={!editable}
           >
-            <MaterialIcons name="delete" size={24} color={editable ? "#6E0202" : "#aaa"} />
+            <MaterialIcons name="delete" size={24} color={editable ? '#6E0202' : '#aaa'} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={editable ? onEdit : undefined}
+            onPress={editable ? onEdit : undefined} // Hanya panggil onEdit jika editable
             style={styles.iconButton}
             disabled={!editable}
           >
-            <Feather name="edit" size={24} color={editable ? "#21523A" : "#aaa"} />
+            <Feather name="edit" size={24} color={editable ? '#21523A' : '#aaa'} />
           </TouchableOpacity>
         </View>
       </View>
@@ -69,51 +70,106 @@ class RiwayatItem extends Component<RiwayatItemProps> {
 interface State {
   modalVisible: boolean;
   ltt: LttData[];
+  currentUserId: string | null;
 }
 
 export default class History extends Component<{}, State> {
   state: State = {
     modalVisible: false,
+    currentUserId: null,
     ltt: [],
   };
 
   unsubscribe: (() => void) | null = null;
 
-  componentDidMount() {
-    const userCollection = collection(db, 'ltt');
+  async componentDidMount() {
+    // Get the current user's ID
+    const user = await getCurrentUser(); // Asumsikan ini mengembalikan objek { id: string } atau null
+    if (user && user.id) {
+      this.setState({ currentUserId: user.id }, () => {
+        this.subscribeToLttData();
+      });
+    } else {
+      // User tidak login atau ID tidak ditemukan, arahkan ke halaman login
+      Alert.alert('Error', 'User ID tidak ditemukan. Harap masuk kembali.');
+      router.replace('./index'); // Sesuaikan dengan path login Anda
+    }
+  }
+
+  subscribeToLttData = () => {
+    const { currentUserId } = this.state;
+    if (!currentUserId) return; // Jangan subscribe jika tidak ada user ID
+
+    const lttCollectionRef = collection(db, 'ltt');
+    // Buat kueri untuk memfilter data LTT berdasarkan userId, dan urutkan berdasarkan createdAt
+    const userLttQuery = query(
+      lttCollectionRef,
+      where('userId', '==', currentUserId),
+      orderBy('createdAt', 'desc'), // Mengurutkan dari yang terbaru
+    );
+
     this.unsubscribe = onSnapshot(
-      userCollection,
+      userLttQuery,
       (snapshot) => {
-        const usersData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...(doc.data() as Omit<LttData, 'id'>),
-        }));
+        const usersData: LttData[] = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          // Pastikan properti ini ada dan konversi jika perlu
+          // Ini adalah bagian KRUSIAL untuk "tanggal invalid"
+          const tanggalLaporan = data.tanggalLaporan && typeof data.tanggalLaporan.toDate === 'function'
+            ? data.tanggalLaporan.toDate()
+            : new Date(); // Fallback jika tidak valid
+          const createdAt = data.createdAt && typeof data.createdAt.toDate === 'function'
+            ? data.createdAt.toDate()
+            : new Date(); // Fallback jika tidak valid
+          const updatedAt = data.updatedAt && typeof data.updatedAt.toDate === 'function'
+            ? data.updatedAt.toDate()
+            : null;
+
+          return {
+            id: doc.id,
+            userId: data.userId, // Pastikan field ini ada di Firestore
+            wilayah_id: data.wilayah_id,
+            bpp: data.bpp,
+            tanggalLaporan: tanggalLaporan,
+            kecamatan: data.kecamatan,
+            kelurahan: data.kelurahan,
+            komoditas: data.komoditas,
+            jenisLahan: data.jenisLahan,
+            luasTambahTanam: data.luasTambahTanam,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          } as LttData; // Type assertion untuk memastikan struktur
+        });
         this.setState({ ltt: usersData });
       },
       (error) => {
-        console.error('Gagal memuat data:', error);
-        Alert.alert('Error', 'Gagal memuat data dari Firestore.');
-      }
+        console.error('Error fetching LTT data:', error);
+        Alert.alert('Error', 'Gagal memuat data riwayat dari Firestore.');
+      },
     );
-  }
+  };
 
   componentWillUnmount() {
     this.unsubscribe?.();
   }
 
-  handleDelete = async (id: string) => {
+  handleDelete = async (id: string | undefined) => { // id bisa undefined
+    if (!id) {
+      Alert.alert('Error', 'ID data tidak ditemukan.');
+      return;
+    }
     try {
       await deleteLttData(id);
       Alert.alert('Sukses', 'Data berhasil dihapus.');
     } catch (error) {
-      console.error('Error delete:', error);
-      Alert.alert('Error', 'Gagal menghapus data.');
+      console.error('Error deleting data:', error);
+      Alert.alert('Error', 'Gagal menghapus data. Pastikan Anda memiliki izin.'); // Pesan lebih spesifik
     }
   };
 
   handleEdit = (item: LttData) => {
     if (!item.id) {
-      Alert.alert('Error', 'ID data tidak valid.');
+      Alert.alert('Error', 'ID data tidak valid untuk diedit.');
       return;
     }
     router.push({
@@ -124,7 +180,8 @@ export default class History extends Component<{}, State> {
 
   confirmLogout = () => {
     this.closeModal();
-    router.replace('./index');
+    // Tambahkan logika logout Firebase di sini jika belum ada di authService
+    router.replace('./index'); // Ganti ke halaman login
   };
 
   openModal = () => {
@@ -136,19 +193,19 @@ export default class History extends Component<{}, State> {
   };
 
   // ✅ Fungsi: Hitung minggu ke berapa dalam tahun
-  getWeekAndYear = (dateStr: string) => {
-    const date = new Date(dateStr);
+  // Menerima objek Date, bukan string
+  getWeekAndYear = (date: Date) => {
     const onejan = new Date(date.getFullYear(), 0, 1);
     const week = Math.ceil((((date.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7);
     return `Minggu ${week}, ${date.getFullYear()}`;
   };
 
   // ✅ Fungsi: Cek apakah data masih bisa diedit atau tidak
-  isEditable = (createdAt: string) => {
-    const createdDate = new Date(createdAt);
+  // Menerima objek Date, bukan string
+  isEditable = (createdAt: Date) => {
     const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-    return diffInDays <= 14;
+    const diffInDays = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+    return diffInDays <= 14; // Bisa diedit dalam 14 hari
   };
 
   render() {
@@ -156,13 +213,26 @@ export default class History extends Component<{}, State> {
 
     // Kelompokkan berdasarkan minggu
     const groupedByWeek: { [week: string]: LttData[] } = {};
-    ltt.forEach((item) => {
-      if (!item.createdAt) return;
-      const weekKey = this.getWeekAndYear(item.createdAt);
+    // Filter data yang createdAt-nya null sebelum mengelompokkan
+    ltt.filter(item => item.createdAt instanceof Date).forEach((item) => {
+      const weekKey = this.getWeekAndYear(item.createdAt); // createdAt sekarang adalah Date
       if (!groupedByWeek[weekKey]) {
         groupedByWeek[weekKey] = [];
       }
       groupedByWeek[weekKey].push(item);
+    });
+
+    // Urutkan minggu-minggu agar yang terbaru di atas
+    const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
+        // Ambil tahun dari 'Minggu X, YYYY'
+        const yearA = parseInt(a.split(', ')[1]);
+        const yearB = parseInt(b.split(', ')[1]);
+        if (yearA !== yearB) return yearB - yearA;
+
+        // Ambil nomor minggu dari 'Minggu X, YYYY'
+        const weekA = parseInt(a.split(' ')[1].replace(',', ''));
+        const weekB = parseInt(b.split(' ')[1].replace(',', ''));
+        return weekB - weekA;
     });
 
     return (
@@ -181,15 +251,20 @@ export default class History extends Component<{}, State> {
               <Text style={styles.emptyText}>Belum ada data :(</Text>
             </View>
           ) : (
-            Object.entries(groupedByWeek).map(([weekKey, items]) => (
+            sortedWeeks.map((weekKey) => ( // Iterasi melalui minggu yang sudah diurutkan
               <View key={weekKey}>
                 <Text style={{ fontSize: 14, fontFamily: 'Lexend2', marginVertical: 10 }}>
                   {weekKey}
                 </Text>
-                {items.map((item) => {
-                  const createdAt = item.createdAt || '';
-                  const dateStr = createdAt ? new Date(createdAt).toLocaleDateString() : 'Tanggal tidak valid';
-                  const editable = createdAt ? this.isEditable(createdAt) : false;
+                {groupedByWeek[weekKey].map((item) => {
+                  // Pastikan createdAt adalah Date sebelum digunakan
+                  const createdAtDate = item.createdAt instanceof Date ? item.createdAt : new Date();
+                  const dateStr = createdAtDate.toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                  });
+                  const editable = this.isEditable(createdAtDate); // Meneruskan objek Date
 
                   return (
                     <RiwayatItem
