@@ -15,10 +15,10 @@ import {
   where,
 } from 'firebase/firestore';
 
-// --- Antarmuka LttData Diperbarui ---
+
 export interface LttData {
   id?: string;
-  userId: string; // <-- **PENTING: Tambahkan ini untuk melacak pemilik data**
+  userId: string; 
   wilayah_id: string;
   bpp: string;
   tanggalLaporan: Date;
@@ -27,23 +27,20 @@ export interface LttData {
   komoditas: string;
   jenisLahan: string;
   luasTambahTanam: number;
-  createdAt: Date; // Mengubah dari 'string' ke 'Date' karena dikonversi dari Timestamp
-  updatedAt: Date | null; // Mengubah dari 'string' ke 'Date | null'
+  createdAt: Date; 
+  updatedAt: Date | null; 
 }
 
-// Menambahkan userId ke CreateLttData type
 export type CreateLttData = Omit<LttData, 'id' | 'createdAt' | 'updatedAt'>;
-export type UpdateLttData = Partial<Omit<LttData, 'id' | 'createdAt'>>; // userId di sini juga bisa di-update jika perlu
+export type UpdateLttData = Partial<Omit<LttData, 'id' | 'createdAt'>>; 
 
-// --- Fungsi addLtt Diperbarui ---
-// Fungsi ini sekarang menerima 'userId' sebagai bagian dari 'CreateLttData'
 export const addLtt = async (data: CreateLttData): Promise<string> => {
   try {
     const lttDataToSave = {
       ...data,
       tanggalLaporan: Timestamp.fromDate(data.tanggalLaporan),
       createdAt: Timestamp.fromDate(new Date()), // Simpan sebagai Timestamp
-      updatedAt: Timestamp.fromDate(new Date()), // Simpan sebagai Timestamp
+      updatedAt: Timestamp.fromDate(new Date()), 
     };
 
     const docRef = await addDoc(collection(db, 'ltt'), lttDataToSave);
@@ -54,8 +51,6 @@ export const addLtt = async (data: CreateLttData): Promise<string> => {
   }
 };
 
-// --- Fungsi getLttData (Realtime Listener) Diperbarui ---
-// Menambahkan opsi filter userId
 export const getLttData = (
   callback: (items: LttData[]) => void,
   userId?: string // userId opsional untuk filter realtime
@@ -75,17 +70,17 @@ export const getLttData = (
       const data = doc.data();
       items.push({
         id: doc.id,
-        userId: data.userId, // Pastikan ada di Firestore
+        userId: data.userId, 
         wilayah_id: data.wilayah_id,
         bpp: data.bpp,
-        tanggalLaporan: data.tanggalLaporan.toDate(), // Konversi Timestamp ke Date
+        tanggalLaporan: data.tanggalLaporan.toDate(), 
         kecamatan: data.kecamatan,
         kelurahan: data.kelurahan,
         komoditas: data.komoditas,
         jenisLahan: data.jenisLahan,
         luasTambahTanam: data.luasTambahTanam,
-        createdAt: data.createdAt.toDate(), // Konversi Timestamp ke Date
-        updatedAt: data.updatedAt ? data.updatedAt.toDate() : null, // Konversi atau null
+        createdAt: data.createdAt.toDate(), 
+        updatedAt: data.updatedAt ? data.updatedAt.toDate() : null, 
       });
     });
     callback(items);
@@ -119,14 +114,14 @@ export const fetchLttDataOnce = async (userId?: string): Promise<LttData[]> => {
         userId: data.userId, // Pastikan ini dibaca dari data Firestore
         wilayah_id: data.wilayah_id,
         bpp: data.bpp,
-        tanggalLaporan: data.tanggalLaporan.toDate(), // Konversi Firebase Timestamp ke Date
+        tanggalLaporan: data.tanggalLaporan.toDate(), 
         kecamatan: data.kecamatan,
         kelurahan: data.kelurahan,
         komoditas: data.komoditas,
         jenisLahan: data.jenisLahan,
         luasTambahTanam: data.luasTambahTanam,
-        createdAt: data.createdAt.toDate(), // Konversi Firebase Timestamp ke Date
-        updatedAt: data.updatedAt ? data.updatedAt.toDate() : null, // Konversi atau null jika tidak ada
+        createdAt: data.createdAt.toDate(),
+        updatedAt: data.updatedAt ? data.updatedAt.toDate() : null, 
       });
     });
 
@@ -137,13 +132,11 @@ export const fetchLttDataOnce = async (userId?: string): Promise<LttData[]> => {
   }
 };
 
-// --- Fungsi editLttById Diperbarui ---
-// Jika userId juga perlu di-update, pastikan ada di UpdateLttData
 export const editLttById = async (id: string, data: UpdateLttData) => {
   try {
     const updatedData: any = {
       ...data,
-      updatedAt: Timestamp.fromDate(new Date()), // Simpan sebagai Timestamp
+      updatedAt: Timestamp.fromDate(new Date()), 
     };
 
     if (data.tanggalLaporan) {
@@ -158,7 +151,6 @@ export const editLttById = async (id: string, data: UpdateLttData) => {
   }
 };
 
-// --- Fungsi fetchLttById Diperbarui ---
 export const fetchLttById = async (id: string): Promise<LttData | null> => {
   const docRef = doc(db, 'ltt', id);
   const docSnap = await getDoc(docRef);
@@ -166,7 +158,7 @@ export const fetchLttById = async (id: string): Promise<LttData | null> => {
     const data = docSnap.data();
     return {
       id: docSnap.id,
-      userId: data.userId, // Pastikan ini dibaca dari data
+      userId: data.userId, 
       wilayah_id: data.wilayah_id,
       bpp: data.bpp,
       tanggalLaporan: data.tanggalLaporan.toDate(),
@@ -175,14 +167,14 @@ export const fetchLttById = async (id: string): Promise<LttData | null> => {
       komoditas: data.komoditas,
       jenisLahan: data.jenisLahan,
       luasTambahTanam: data.luasTambahTanam,
-      createdAt: data.createdAt.toDate(), // Konversi Timestamp ke Date
-      updatedAt: data.updatedAt ? data.updatedAt.toDate() : null, // Konversi atau null
+      createdAt: data.createdAt.toDate(), 
+      updatedAt: data.updatedAt ? data.updatedAt.toDate() : null, 
     };
   }
   return null;
 };
 
-// --- Fungsi deleteLttData (Tidak ada perubahan signifikan terkait userId) ---
+
 export const deleteLttData = async (id: string) => {
   try {
     await deleteDoc(doc(db, 'ltt', id));
@@ -192,17 +184,14 @@ export const deleteLttData = async (id: string) => {
   }
 };
 
-// --- Fungsi fetchLTTByKomoditas Diperbarui (Tidak ada perubahan signifikan terkait userId kecuali data.userId dapat diakses jika diperlukan) ---
 export const fetchLTTByKomoditas = async (komoditas: string) => {
-  // Jika Anda ingin memfilter berdasarkan user juga di sini, Anda perlu menambahkan parameter userId
+
   const snapshot = await getDocs(collection(db, 'ltt'));
   const map: Record<string, number> = {};
 
   snapshot.forEach((doc) => {
     const data = doc.data();
     if (data.komoditas === komoditas) {
-      // Anda bisa menambahkan filter userId di sini juga jika diperlukan, misal:
-      // if (data.komoditas === komoditas && data.userId === someSpecificUserId) {
       map[data.kecamatan] = (map[data.kecamatan] || 0) + (data.luasTambahTanam || 0);
     }
   });

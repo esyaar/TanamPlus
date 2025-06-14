@@ -1,5 +1,5 @@
 import { TCollections } from "@/constants/Firebase";
-import { db } from "@/services/firebaseConfig"; // Impor db langsung dari firebaseConfig
+import { db } from "@/services/firebaseConfig"; 
 import { collection, doc } from "firebase/firestore";
 
 /**
@@ -7,7 +7,7 @@ import { collection, doc } from "firebase/firestore";
  */
 export function generateID(collectionName: TCollections): string {
   const newDocRef = doc(collection(db, collectionName)); // Gunakan db yang sudah diimpor
-  const generatedId = newDocRef.id; // ID unik yang dihasilkan oleh Firestore
+  const generatedId = newDocRef.id; 
   return generatedId;
 }
 

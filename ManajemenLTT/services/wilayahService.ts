@@ -17,7 +17,7 @@ export interface WilayahData {
   id?: string;
   user_id: string;
   penyuluh: string[];
-  bpp: string;
+  //bpp: string;
   kecamatan: string;
   kelurahan: string;
   createdAt?: string;
@@ -53,7 +53,7 @@ export const getWilayah = (callback: (items: WilayahData[]) => void): Unsubscrib
       items.push({
         id: doc.id,
         user_id: data.user_id,
-        bpp: data.bpp,
+       // bpp: data.bpp,
         kecamatan: data.kecamatan,
         kelurahan: data.kelurahan,
         penyuluh: Array.isArray(data.penyuluh)
@@ -83,7 +83,7 @@ export const getWilayahByPenyuluh = (userId: string, callback: (items: WilayahDa
         items.push({
           id: doc.id,
           user_id: data.user_id,
-          bpp: data.bpp,
+        //  bpp: data.bpp,
           kecamatan: data.kecamatan,
           kelurahan: data.kelurahan,
           penyuluh,
@@ -125,7 +125,7 @@ export const subscribeToWilayahByPenyuluh = (
           items.push({
             id: doc.id,
             user_id: data.user_id,
-            bpp: data.bpp,
+           // bpp: data.bpp,
             kecamatan: data.kecamatan,
             kelurahan: data.kelurahan,
             penyuluh,
@@ -155,7 +155,7 @@ export const fetchLttDataOnce = async (): Promise<WilayahData[]> => {
     items.push({
       id: doc.id,
       user_id: data.user_id,
-      bpp: data.bpp,
+      //bpp: data.bpp,
       kecamatan: data.kecamatan,
       kelurahan: data.kelurahan,
       penyuluh: Array.isArray(data.penyuluh)
@@ -202,7 +202,7 @@ export const getWilayahById = async (id: string): Promise<WilayahData> => {
       return {
         id: docSnap.id,
         user_id: data.user_id,
-        bpp: data.bpp,
+       // bpp: data.bpp,
         kecamatan: data.kecamatan,
         kelurahan: data.kelurahan,
         penyuluh: Array.isArray(data.penyuluh)
