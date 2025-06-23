@@ -1,2 +1,2 @@
-# Aplikasi-LA
+# Manajemen LTT (Tanam +)
 
