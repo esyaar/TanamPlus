@@ -23,6 +23,7 @@ export interface UserData {
   role: 'admin' | 'penyuluh' | 'kepalabpp';
   createdAt?: string;
   updatedAt?: string;
+  wilayah:string;
 }
 
 export type CreateUserProfileData = Omit<UserData, 'id' | 'createdAt' | 'updatedAt'>;

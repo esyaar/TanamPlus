@@ -37,9 +37,8 @@ export default function TabLayout() {
           name="dbkepala"
           options={{
             title: 'Dashboard',
-            tabBarIcon: ({ color }) => (
-              <MaterialCommunityIcons name="view-dashboard" size={24} color={color} />
-            ),
+            tabBarIcon: ({ color }) => 
+              <MaterialCommunityIcons name="view-dashboard" size={24} color={color} />,
           }}
         />
         <Tabs.Screen

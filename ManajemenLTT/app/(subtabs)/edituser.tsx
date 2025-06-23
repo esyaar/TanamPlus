@@ -48,8 +48,8 @@ const EditUser: React.FC = () => {
         setRole(userData.role || '');
         setWilayah(userData.wilayah || ''); 
       } catch (err) {
-        console.error('Failed to fetch user data:', err);
-        setError('Failed to load user data. Please try again.');
+        console.error('Error fetching user data:', err);
+        setError('Gagal memuat data, silahkan coba lagi');
       } finally {
         setLoading(false);
       }
@@ -60,7 +60,7 @@ const EditUser: React.FC = () => {
 
   const handleSubmit = async () => {
     if (!id) {
-      Alert.alert('Error', 'User ID is missing for update.');
+      Alert.alert('Error', 'User ID hilang untuk update.');
       return;
     }
 

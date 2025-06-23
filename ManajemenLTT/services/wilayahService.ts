@@ -176,8 +176,8 @@ export const editWilayahById = async (id: string, data: UpdateWilayah) => {
       updatedAt: new Date().toISOString(),
     };
 
-    const lttRef = doc(db, 'wilayah', id);
-    await updateDoc(lttRef, updatedData);
+    const wilayahRef = doc(db, 'wilayah', id);
+    await updateDoc(wilayahRef, updatedData);
   } catch (error) {
     console.error(`Gagal melakukan perubahan data wilayah dengan ID ${id}:`, error);
     throw error;

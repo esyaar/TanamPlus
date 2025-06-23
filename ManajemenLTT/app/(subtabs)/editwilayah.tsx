@@ -37,7 +37,7 @@ const EditWilayah: React.FC = () => {
 
   const [state, setState] = useState({
     id: '',
-    users_id: '',
+    user_id: '',
     kecamatan: '',
     kelurahan: '',
     penyuluh1: '',
@@ -51,22 +51,18 @@ const EditWilayah: React.FC = () => {
     if (id) {
       const fetchWilayahData = async () => {
         try {
-          const wilayahDoc = await getDoc(doc(db, 'wilayah', id as string));
-          if (wilayahDoc.exists()) {
-            const wilayahData = wilayahDoc.data() as WilayahData;
-            setState((prev) => ({
-              ...prev,
-              id: id as string,
-              kecamatan: wilayahData.kecamatan || '',
-              kelurahan: wilayahData.kelurahan || '',
-              penyuluh1: wilayahData.penyuluh?.[0]?.id || '',
-              penyuluh2: wilayahData.penyuluh?.[1]?.id || '',
-              penyuluh3: wilayahData.penyuluh?.[2]?.id || '',
-              showAdditionalPicker: !!wilayahData.penyuluh?.[2]?.id,
-            }));
-          } else {
-            Alert.alert('Error', 'Data wilayah tidak ditemukan.');
-          }
+          const wilayahData = await wilayahService.getWilayahById(id as string);
+          setState((prev) => ({
+            ...prev,
+            id: id as string,
+            user_id: wilayahData.user_id || '',
+            kecamatan: wilayahData.kecamatan || '',
+            kelurahan: wilayahData.kelurahan || '',
+            penyuluh1: wilayahData.penyuluh?.[0] || '',
+            penyuluh2: wilayahData.penyuluh?.[1] || '',
+            penyuluh3: wilayahData.penyuluh?.[2] || '',
+            showAdditionalPicker: !!wilayahData.penyuluh?.[2],
+          }));
         } catch (error) {
           console.error('Error fetching wilayah data:', error);
           Alert.alert('Error', 'Gagal memuat data wilayah.');
@@ -98,7 +94,7 @@ const EditWilayah: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    const { kecamatan, kelurahan, penyuluh1, penyuluh2, penyuluh3, penyuluhList } = state;
+    const { kecamatan, kelurahan, penyuluh1, penyuluh2, penyuluh3, user_id } = state;
 
     if (!kecamatan || !kelurahan || !penyuluh1) {
       Alert.alert('Validasi', 'Mohon lengkapi semua data sebelum mengirim.');
@@ -106,28 +102,21 @@ const EditWilayah: React.FC = () => {
     }
 
     try {
-      const getPenyuluhName = (id: string) => penyuluhList.find((user) => user.id === id)?.name || '';
-
-      const penyuluhData = [
-        penyuluh1 && { id: penyuluh1, name: getPenyuluhName(penyuluh1) },
-        penyuluh2 && { id: penyuluh2, name: getPenyuluhName(penyuluh2) },
-        penyuluh3 && { id: penyuluh3, name: getPenyuluhName(penyuluh3) },
-      ].filter(Boolean);
+      const penyuluhData = [penyuluh1, penyuluh2, penyuluh3].filter(Boolean);
 
       const wilayahData: UpdateWilayah = {
-        user_id: penyuluh1,
+        user_id: penyuluh1, 
         kecamatan,
         kelurahan,
         penyuluh: penyuluhData,
       };
 
-      const docId = await wilayahService.editWilayahById(wilayahData, id as string);
+      await wilayahService.editWilayahById(id as string, wilayahData);
       Alert.alert('Sukses', 'Data wilayah berhasil disimpan!');
-      console.log('Data tersimpan dengan ID:', docId);
       router.replace('/Admin/wilayahkerja');
     } catch (error) {
-      Alert.alert('Error', 'Gagal menyimpan data wilayah. Silakan coba lagi.');
       console.error('Error saat menyimpan data:', error);
+      Alert.alert('Error', 'Gagal menyimpan data wilayah. Silakan coba lagi.');
     }
   };
 
