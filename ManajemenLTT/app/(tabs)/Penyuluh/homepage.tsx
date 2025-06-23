@@ -32,17 +32,13 @@ class Homepage extends Component<{}, State> {
     this.loadLastInput();
   }
 
-  // Define confirmLogout as it's used in render
   confirmLogout = () => {
-    // Implement your logout logic here
     console.log('User confirmed logout');
-    // Example: router.replace('/login');
-    this.closeModal(); // Close the modal after logout action
+    this.closeModal(); 
   };
 
   loadLastInput = async () => {
     try {
-      // Get the current user's ID
       const user = await getCurrentUser();
       const userId = user?.id
       if (!userId) {
@@ -51,17 +47,15 @@ class Homepage extends Component<{}, State> {
         return;
       }
 
-      // Fetch data, passing the userId for filtering
       const data = await fetchLttDataOnce(userId);
       if (data.length > 0) {
-        // Data is already sorted by date in fetchLttDataOnce, so the first is the latest
         this.setState({ lastInputData: data[0] });
       } else {
-        this.setState({ lastInputData: null }); // No data for this user
+        this.setState({ lastInputData: null });
       }
     } catch (error) {
       console.error('Failed to load last input data:', error);
-      this.setState({ lastInputData: null }); // Reset state on error
+      this.setState({ lastInputData: null }); 
     }
   };
 

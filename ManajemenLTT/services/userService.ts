@@ -25,10 +25,8 @@ export interface UserData {
   updatedAt?: string;
 }
 
-// Type untuk membuat user baru (tanpa updatedAt)
 export type CreateUserProfileData = Omit<UserData, 'id' | 'createdAt' | 'updatedAt'>;
 
-// Type untuk update user (tanpa id dan createdAt)
 export type UpdateUserProfileData = Partial<Omit<UserData, 'id' | 'createdAt'>>;
 
 export const addUser = async (data: CreateUserProfileData) => {
@@ -102,7 +100,7 @@ export const deleteUserById = async (id: string) => {
     throw error;
   }
 };
-//halaman riwayta
+
 export const getUserById = async (id: string): Promise<UserData> => {
   try {
     const userRef = doc(db, 'users', id);
@@ -117,7 +115,7 @@ export const getUserById = async (id: string): Promise<UserData> => {
     throw error;
   }
 };
-//halaman wilayah
+
 export const getUsersByRole = (role: string, callback: (users: UserData[]) => void) => {
   const q = query(collection(db, 'users'), where('role', '==', role));
 

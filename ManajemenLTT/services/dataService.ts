@@ -1,4 +1,4 @@
-import { db } from '../services/firebaseConfig'; // Pastikan path ini benar!
+import { db } from '../services/firebaseConfig'; 
 import {
   collection,
   doc,
@@ -39,7 +39,7 @@ export const addLtt = async (data: CreateLttData): Promise<string> => {
     const lttDataToSave = {
       ...data,
       tanggalLaporan: Timestamp.fromDate(data.tanggalLaporan),
-      createdAt: Timestamp.fromDate(new Date()), // Simpan sebagai Timestamp
+      createdAt: Timestamp.fromDate(new Date()), 
       updatedAt: Timestamp.fromDate(new Date()), 
     };
 
@@ -53,7 +53,7 @@ export const addLtt = async (data: CreateLttData): Promise<string> => {
 
 export const getLttData = (
   callback: (items: LttData[]) => void,
-  userId?: string // userId opsional untuk filter realtime
+  userId?: string 
 ) => {
   const queryConstraints: QueryConstraint[] = [];
 
@@ -89,17 +89,14 @@ export const getLttData = (
   return unsubscribe;
 };
 
-// --- Fungsi fetchLttDataOnce Diperbarui (Sudah benar dari diskusi sebelumnya) ---
+
 export const fetchLttDataOnce = async (userId?: string): Promise<LttData[]> => {
   try {
     const queryConstraints: QueryConstraint[] = [];
 
-    // Jika userId diberikan, tambahkan klausa where
     if (userId) {
       queryConstraints.push(where('userId', '==', userId));
     }
-
-    // Selalu tambahkan klausa orderBy
     queryConstraints.push(orderBy('createdAt', 'desc'));
 
     const q = query(collection(db, 'ltt'), ...queryConstraints);
@@ -111,7 +108,7 @@ export const fetchLttDataOnce = async (userId?: string): Promise<LttData[]> => {
       const data = doc.data();
       items.push({
         id: doc.id,
-        userId: data.userId, // Pastikan ini dibaca dari data Firestore
+        userId: data.userId,
         wilayah_id: data.wilayah_id,
         bpp: data.bpp,
         tanggalLaporan: data.tanggalLaporan.toDate(), 

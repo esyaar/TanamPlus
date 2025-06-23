@@ -20,7 +20,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import {
   deleteUserById,
   UserData,
-  getCurrentUser,
+ // getCurrentUser,
 } from '@/services/userService';
 import LogoutModal from '@/components/ui/modalout';
 
@@ -85,7 +85,13 @@ export default class UserList extends Component<{}, {}> {
           id: doc.id,
           ...(doc.data() as Omit<UserData, 'id'>),
         }));
-        this.setState({ users: usersData });
+        const sortedUsers = usersData.sort((a, b) => {
+          if (a.role !== b.role) {
+            return a.role.localeCompare(b.role);
+          }
+          return a.name.localeCompare(b.name);
+        });
+        this.setState({ users: sortedUsers });
       },
       (error) => {
         console.error('Gagal memuat data user:', error);

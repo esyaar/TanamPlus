@@ -27,17 +27,14 @@ export async function loginUser(
   const doc = snap.docs[0];
   const data = doc.data() as Omit<UserData, 'id'> & { role?: string };
 
-  // Cek password
   if (data.password !== createHashSHA1(password)) {
    throw new Error('Password salah');
   }
 
   const user = { id: doc.id, ...data };
 
-  // Simpan ke AsyncStorage
   await AsyncStorage.setItem('userData', JSON.stringify(user));
 
-  // Opsi: kalau web dan bukan admin, blokir
   if (Platform.OS === 'web' && user.role !== 'admin') {
     showAlert('Gagal Login', 'Hanya admin bisa akses via web.');
     throw new Error('Bukan admin');

@@ -37,7 +37,7 @@ type State = {
   penyuluh3: string;
   penyuluhList: User[];
   showAdditionalPicker: boolean;
-  availableKelurahan: string[]; // Ditambahkan
+  availableKelurahan: string[]; 
 };
 
 const kecamatanToKelurahan: { [key: string]: string[] } = {
@@ -105,26 +105,24 @@ class AddWilayah extends Component<{}, State> {
     }
 
     try {
-      // Ambil nama penyuluh berdasarkan ID
       const getPenyuluhName = (id: string) => penyuluhList.find(user => user.id === id)?.name || '';
 
-      // Siapkan array penyuluh dengan id dan name
       const penyuluhData = [
         penyuluh1 && { id: penyuluh1, name: getPenyuluhName(penyuluh1) },
         penyuluh2 && { id: penyuluh2, name: getPenyuluhName(penyuluh2) },
         penyuluh3 && { id: penyuluh3, name: getPenyuluhName(penyuluh3) },
-      ].filter(Boolean); // Hapus entri kosong
+      ].filter(Boolean); 
 
       const wilayahData: CreateWilayah = {
         user_id: penyuluh1,
         kecamatan,
         kelurahan,
-        penyuluh: penyuluhData, // Simpan array penyuluh
+        penyuluh: penyuluhData, 
       };
 
       const docId = await wilayahService.addWilayah(wilayahData);
       Alert.alert('Sukses', 'Data wilayah berhasil disimpan!', [
-        { text: 'OK', onPress: () => router.back() }, // Kembali ke halaman sebelumnya
+        { text: 'OK', onPress: () => router.back() }, 
       ]);
       console.log('Data tersimpan dengan ID:', docId);
     } catch (error) {

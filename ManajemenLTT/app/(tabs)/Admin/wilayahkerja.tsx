@@ -16,7 +16,7 @@ import { collection, onSnapshot } from 'firebase/firestore';
 import {
   deleteWilayah,
   WilayahData,
-  getwWilayahId,
+ // getwWilayahId,
 } from '@/services/wilayahService';
 
 interface State {
@@ -150,7 +150,7 @@ export default class Wilayah extends  Component<{}, {}> {
 
         <ScrollView contentContainerStyle={styles.body}>
          {this.state.wilayah
-        .sort((a, b) => a.kecamatan.localeCompare(b.kecamatan)) // sort berdasarkan abjad kecamatan
+        .sort((a, b) => a.kecamatan.localeCompare(b.kecamatan)) 
         .map((wilayah) => (
         <WilayahItem
         key={wilayah.id}

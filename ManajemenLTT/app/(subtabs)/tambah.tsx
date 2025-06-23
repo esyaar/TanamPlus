@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
-import { addLtt } from '@/services/dataService'; // Assuming addLtt is updated
+import { addLtt } from '@/services/dataService'; 
 import { subscribeToWilayahByPenyuluh, WilayahData } from '@/services/wilayahService';
 import { getCurrentUser } from '@/services/authService';
 
@@ -41,7 +41,7 @@ type State = {
   luasTambahTanam: string;
   wilayahData: WilayahData[];
   filteredKelurahan: string[];
-  currentUserId: string | null; // Add currentUserId to state
+  currentUserId: string | null; 
 };
 
 class InputLTTForm extends Component<{}, State> {
@@ -56,7 +56,7 @@ class InputLTTForm extends Component<{}, State> {
     luasTambahTanam: '',
     wilayahData: [],
     filteredKelurahan: [],
-    currentUserId: null, // Initialize currentUserId
+    currentUserId: null, 
   };
 
   unsubscribe: (() => void) | null = null;
@@ -65,7 +65,7 @@ class InputLTTForm extends Component<{}, State> {
     try {
       const user = await getCurrentUser();
       if (user && user.id) {
-        this.setState({ currentUserId: user.id }); // Set the current user ID
+        this.setState({ currentUserId: user.id }); 
         this.unsubscribe = subscribeToWilayahByPenyuluh(user?.id || null, (items, error) => {
           if (error) {
             Alert.alert('Error', error);
@@ -75,7 +75,7 @@ class InputLTTForm extends Component<{}, State> {
         });
       } else {
         Alert.alert('Error', 'Gagal mendapatkan data pengguna. Silakan login kembali.');
-        router.replace('/index'); // Redirect to login if user not found
+        router.replace('/index'); 
       }
     } catch (error) {
       console.error('Gagal mendapatkan pengguna:', error);
@@ -105,7 +105,7 @@ class InputLTTForm extends Component<{}, State> {
       komoditas,
       jenisLahan,
       luasTambahTanam,
-      currentUserId, // Get currentUserId from state
+      currentUserId, 
     } = this.state;
 
     if (!currentUserId) {
@@ -130,7 +130,7 @@ class InputLTTForm extends Component<{}, State> {
     );
 
     const payload = {
-      userId: currentUserId, // Include userId in the payload
+      userId: currentUserId, 
       wilayah_id: wilayah?.id || kecamatan,
       bpp,
       tanggalLaporan,

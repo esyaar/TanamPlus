@@ -11,11 +11,10 @@ import {
 import { router } from 'expo-router';
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import LogoutModal from '@/components/ui/modalout';
-import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore'; // Import orderBy
+import { collection, onSnapshot, query, where, orderBy } from 'firebase/firestore';
 import { deleteLttData, LttData } from '@/services/dataService';
 import { db } from '@/services/firebaseConfig';
-import { getCurrentUser } from '@/services/authService'; // Asumsikan getCurrentUser mengembalikan { id: string } atau null
-
+import { getCurrentUser } from '@/services/authService'; 
 interface RiwayatItemProps {
   jenisKomoditas: string;
   tanggalInput: string;
@@ -55,7 +54,7 @@ class RiwayatItem extends Component<RiwayatItemProps> {
             <MaterialIcons name="delete" size={24} color={editable ? '#6E0202' : '#aaa'} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={editable ? onEdit : undefined} // Hanya panggil onEdit jika editable
+            onPress={editable ? onEdit : undefined} 
             style={styles.iconButton}
             disabled={!editable}
           >
@@ -83,29 +82,26 @@ export default class History extends Component<{}, State> {
   unsubscribe: (() => void) | null = null;
 
   async componentDidMount() {
-    // Get the current user's ID
-    const user = await getCurrentUser(); // Asumsikan ini mengembalikan objek { id: string } atau null
+    const user = await getCurrentUser(); 
     if (user && user.id) {
       this.setState({ currentUserId: user.id }, () => {
         this.subscribeToLttData();
       });
     } else {
-      // User tidak login atau ID tidak ditemukan, arahkan ke halaman login
       Alert.alert('Error', 'User ID tidak ditemukan. Harap masuk kembali.');
-      router.replace('./index'); // Sesuaikan dengan path login Anda
+      router.replace('./index');
     }
   }
 
   subscribeToLttData = () => {
     const { currentUserId } = this.state;
-    if (!currentUserId) return; // Jangan subscribe jika tidak ada user ID
+    if (!currentUserId) return; 
 
     const lttCollectionRef = collection(db, 'ltt');
-    // Buat kueri untuk memfilter data LTT berdasarkan userId, dan urutkan berdasarkan createdAt
     const userLttQuery = query(
       lttCollectionRef,
       where('userId', '==', currentUserId),
-      orderBy('createdAt', 'desc'), // Mengurutkan dari yang terbaru
+      orderBy('createdAt', 'desc'), 
     );
 
     this.unsubscribe = onSnapshot(
@@ -113,21 +109,19 @@ export default class History extends Component<{}, State> {
       (snapshot) => {
         const usersData: LttData[] = snapshot.docs.map((doc) => {
           const data = doc.data();
-          // Pastikan properti ini ada dan konversi jika perlu
-          // Ini adalah bagian KRUSIAL untuk "tanggal invalid"
           const tanggalLaporan = data.tanggalLaporan && typeof data.tanggalLaporan.toDate === 'function'
             ? data.tanggalLaporan.toDate()
-            : new Date(); // Fallback jika tidak valid
+            : new Date(); 
           const createdAt = data.createdAt && typeof data.createdAt.toDate === 'function'
             ? data.createdAt.toDate()
-            : new Date(); // Fallback jika tidak valid
+            : new Date(); 
           const updatedAt = data.updatedAt && typeof data.updatedAt.toDate === 'function'
             ? data.updatedAt.toDate()
             : null;
 
           return {
             id: doc.id,
-            userId: data.userId, // Pastikan field ini ada di Firestore
+            userId: data.userId, 
             wilayah_id: data.wilayah_id,
             bpp: data.bpp,
             tanggalLaporan: tanggalLaporan,
@@ -138,7 +132,7 @@ export default class History extends Component<{}, State> {
             luasTambahTanam: data.luasTambahTanam,
             createdAt: createdAt,
             updatedAt: updatedAt,
-          } as LttData; // Type assertion untuk memastikan struktur
+          } as LttData; 
         });
         this.setState({ ltt: usersData });
       },
@@ -153,7 +147,7 @@ export default class History extends Component<{}, State> {
     this.unsubscribe?.();
   }
 
-  handleDelete = async (id: string | undefined) => { // id bisa undefined
+  handleDelete = async (id: string | undefined) => { 
     if (!id) {
       Alert.alert('Error', 'ID data tidak ditemukan.');
       return;
@@ -163,7 +157,7 @@ export default class History extends Component<{}, State> {
       Alert.alert('Sukses', 'Data berhasil dihapus.');
     } catch (error) {
       console.error('Error deleting data:', error);
-      Alert.alert('Error', 'Gagal menghapus data. Pastikan Anda memiliki izin.'); // Pesan lebih spesifik
+      Alert.alert('Error', 'Gagal menghapus data. Pastikan Anda memiliki izin.'); 
     }
   };
 
@@ -180,8 +174,7 @@ export default class History extends Component<{}, State> {
 
   confirmLogout = () => {
     this.closeModal();
-    // Tambahkan logika logout Firebase di sini jika belum ada di authService
-    router.replace('./index'); // Ganti ke halaman login
+    router.replace('./index'); 
   };
 
   openModal = () => {
@@ -192,44 +185,35 @@ export default class History extends Component<{}, State> {
     this.setState({ modalVisible: false });
   };
 
-  // ✅ Fungsi: Hitung minggu ke berapa dalam tahun
-  // Menerima objek Date, bukan string
   getWeekAndYear = (date: Date) => {
     const onejan = new Date(date.getFullYear(), 0, 1);
     const week = Math.ceil((((date.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7);
     return `Minggu ${week}, ${date.getFullYear()}`;
   };
 
-  // ✅ Fungsi: Cek apakah data masih bisa diedit atau tidak
-  // Menerima objek Date, bukan string
   isEditable = (createdAt: Date) => {
     const now = new Date();
     const diffInDays = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-    return diffInDays <= 14; // Bisa diedit dalam 14 hari
+    return diffInDays <= 14; 
   };
 
   render() {
     const { ltt, modalVisible } = this.state;
 
-    // Kelompokkan berdasarkan minggu
     const groupedByWeek: { [week: string]: LttData[] } = {};
-    // Filter data yang createdAt-nya null sebelum mengelompokkan
     ltt.filter(item => item.createdAt instanceof Date).forEach((item) => {
-      const weekKey = this.getWeekAndYear(item.createdAt); // createdAt sekarang adalah Date
+      const weekKey = this.getWeekAndYear(item.createdAt); 
       if (!groupedByWeek[weekKey]) {
         groupedByWeek[weekKey] = [];
       }
       groupedByWeek[weekKey].push(item);
     });
 
-    // Urutkan minggu-minggu agar yang terbaru di atas
     const sortedWeeks = Object.keys(groupedByWeek).sort((a, b) => {
-        // Ambil tahun dari 'Minggu X, YYYY'
         const yearA = parseInt(a.split(', ')[1]);
         const yearB = parseInt(b.split(', ')[1]);
         if (yearA !== yearB) return yearB - yearA;
 
-        // Ambil nomor minggu dari 'Minggu X, YYYY'
         const weekA = parseInt(a.split(' ')[1].replace(',', ''));
         const weekB = parseInt(b.split(' ')[1].replace(',', ''));
         return weekB - weekA;
@@ -251,20 +235,19 @@ export default class History extends Component<{}, State> {
               <Text style={styles.emptyText}>Belum ada data :(</Text>
             </View>
           ) : (
-            sortedWeeks.map((weekKey) => ( // Iterasi melalui minggu yang sudah diurutkan
+            sortedWeeks.map((weekKey) => ( 
               <View key={weekKey}>
                 <Text style={{ fontSize: 14, fontFamily: 'Lexend2', marginVertical: 10 }}>
                   {weekKey}
                 </Text>
                 {groupedByWeek[weekKey].map((item) => {
-                  // Pastikan createdAt adalah Date sebelum digunakan
                   const createdAtDate = item.createdAt instanceof Date ? item.createdAt : new Date();
                   const dateStr = createdAtDate.toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
                   });
-                  const editable = this.isEditable(createdAtDate); // Meneruskan objek Date
+                  const editable = this.isEditable(createdAtDate); 
 
                   return (
                     <RiwayatItem

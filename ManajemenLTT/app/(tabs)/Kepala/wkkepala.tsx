@@ -18,13 +18,13 @@ import {
   WilayahData,
   getwWilayahId,
 } from '@/services/wilayahService';
-import { getCurrentUser } from '@/services/userService'; // Tambahan impor
+import { getCurrentUser } from '@/services/userService'; 
 
 interface State {
   wilayah: WilayahData[];
   modalVisible: boolean;
-  userRole: string | null;    // Tambahan untuk role pengguna
-  userWilayah: string | null; // Tambahan untuk wilayah pengguna
+  userRole: string | null;    
+  userWilayah: string | null; 
 }
 
 type WilayahItemProps = {
@@ -72,8 +72,8 @@ export default class Wilayah extends Component<{}, State> {
   state: State = {
     wilayah: [],
     modalVisible: false,
-    userRole: null,    // Inisialisasi
-    userWilayah: null, // Inisialisasi
+    userRole: null,    
+    userWilayah: null, 
   };
 
   unsubscribe: (() => void) | null = null;
@@ -107,7 +107,7 @@ export default class Wilayah extends Component<{}, State> {
     } else if (userRole === 'kepalabpp' && userWilayah) {
       wilayahQuery = query(collection(db, 'wilayah'), where('kecamatan', '==', userWilayah));
     } else {
-      wilayahQuery = collection(db, 'wilayah'); // Default ke semua data jika role tidak valid
+      wilayahQuery = collection(db, 'wilayah'); 
     }
 
     this.unsubscribe = onSnapshot(

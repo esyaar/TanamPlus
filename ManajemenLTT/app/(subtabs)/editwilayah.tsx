@@ -47,7 +47,6 @@ const EditWilayah: React.FC = () => {
     showAdditionalPicker: false,
   });
 
-  // Fetch wilayah data by ID
   useEffect(() => {
     if (id) {
       const fetchWilayahData = async () => {
@@ -77,7 +76,6 @@ const EditWilayah: React.FC = () => {
     }
   }, [id]);
 
-  // Fetch penyuluh list
   useEffect(() => {
     const q = query(collection(db, 'users'), where('role', '==', 'penyuluh'));
     const unsubscribe = onSnapshot(q, (querySnapshot) => {

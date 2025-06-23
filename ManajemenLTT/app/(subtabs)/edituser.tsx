@@ -24,7 +24,7 @@ const EditUser: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('');
-  const [wilayah, setWilayah] = useState(''); // Added wilayah state
+  const [wilayah, setWilayah] = useState(''); 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +46,7 @@ const EditUser: React.FC = () => {
         setEmail(userData.email || '');
         setUsername(userData.username || '');
         setRole(userData.role || '');
-        setWilayah(userData.wilayah || ''); // Set wilayah from fetched data
+        setWilayah(userData.wilayah || ''); 
       } catch (err) {
         console.error('Failed to fetch user data:', err);
         setError('Failed to load user data. Please try again.');
@@ -74,7 +74,7 @@ const EditUser: React.FC = () => {
       email,
       username,
       role: role as 'admin' | 'penyuluh' | 'kepalabpp',
-      wilayah: role === 'kepalabpp' ? wilayah : '', // Include wilayah for kepalabpp
+      wilayah: role === 'kepalabpp' ? wilayah : '', 
     };
 
     if (password) {
@@ -168,7 +168,7 @@ const EditUser: React.FC = () => {
                 onValueChange={(value) => {
                   console.log('Selected role:', value);
                   setRole(value);
-                  setWilayah(''); // Reset wilayah when role changes
+                  setWilayah(''); 
                 }}
                 style={styles.picker}
               >
