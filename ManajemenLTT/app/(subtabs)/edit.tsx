@@ -10,12 +10,15 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { editLttById, fetchLttById } from '@/services/dataService';
+import { subscribeToWilayahByPenyuluh, WilayahData } from '@/services/wilayahService';
+import { getCurrentUser } from '@/services/authService';
 
 interface LttData {
   id: string;
@@ -31,7 +34,6 @@ interface LttData {
 
 const EditLTTForm: React.FC = () => {
   const { id } = useLocalSearchParams();
-  console.log('ID yang diterima:', id);
   const [state, setState] = useState({
     kecamatan: '',
     kelurahan: '',
@@ -42,25 +44,47 @@ const EditLTTForm: React.FC = () => {
     jenisLahan: '',
     luasTambahTanam: '',
     loading: true,
+    wilayahData: [] as WilayahData[],
+    filteredKelurahan: [] as string[],
+    currentUserId: null as string | null,
   });
 
   useEffect(() => {
-    if (!id) {
-      alert('ID data tidak ditemukan.');
-      router.back();
-      return;
-    }
+    let unsubscribe: (() => void) | null = null;
 
-    const fetchData = async () => {
+    const initialize = async () => {
       try {
+        const user = await getCurrentUser();
+        if (!user || !user.id) {
+          Alert.alert('Error', 'Gagal mendapatkan data pengguna. Silakan login kembali.');
+          router.replace('@/index');
+          return;
+        }
+
+        setState((prev) => ({ ...prev, currentUserId: user.id }));
+
+        unsubscribe = subscribeToWilayahByPenyuluh(user.id, (items, error) => {
+          if (error) {
+            Alert.alert('Error', error);
+            return;
+          }
+          setState((prev) => ({ ...prev, wilayahData: items }));
+        });
+
+        if (!id) {
+          Alert.alert('Error', 'ID data tidak ditemukan.');
+          router.back();
+          return;
+        }
+
         const docData = await fetchLttById(id as string);
-        console.log('Data yang diambil:', docData);
         if (docData) {
           let tanggal = new Date(docData.tanggalLaporan);
           if (isNaN(tanggal.getTime())) {
             tanggal = new Date();
           }
-          setState({
+          setState((prev) => ({
+            ...prev,
             kecamatan: docData.kecamatan || '',
             kelurahan: docData.kelurahan || '',
             bpp: docData.bpp || '',
@@ -69,21 +93,36 @@ const EditLTTForm: React.FC = () => {
             jenisLahan: docData.jenisLahan || '',
             luasTambahTanam: docData.luasTambahTanam !== undefined ? docData.luasTambahTanam.toString() : '',
             loading: false,
-            showDatePicker: false,
-          });
+            filteredKelurahan: prev.wilayahData
+              .filter((item) => item.kecamatan === docData.kecamatan)
+              .map((item) => item.kelurahan),
+          }));
         } else {
-          alert('Data tidak ditemukan.');
+          Alert.alert('Error', 'Data tidak ditemukan.');
           router.back();
         }
       } catch (error) {
         console.error('Gagal mengambil data:', error);
-        alert('Gagal mengambil data.');
+        Alert.alert('Error', 'Gagal mengambil data. Silakan coba lagi.');
         router.back();
       }
     };
 
-    fetchData();
+    initialize();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [id]);
+
+  const handleKecamatanChange = (kecamatan: string) => {
+    const filteredKelurahan = state.wilayahData
+      .filter((item) => item.kecamatan === kecamatan)
+      .map((item) => item.kelurahan);
+    setState((prev) => ({ ...prev, kecamatan, kelurahan: '', filteredKelurahan }));
+  };
 
   const handleSubmit = async () => {
     const {
@@ -94,30 +133,49 @@ const EditLTTForm: React.FC = () => {
       komoditas,
       jenisLahan,
       luasTambahTanam,
+      currentUserId,
+      wilayahData,
     } = state;
 
-    if (!kecamatan || !kelurahan || !bpp || !komoditas || !jenisLahan || !luasTambahTanam) {
-      alert('Harap lengkapi semua data!');
+    if (!currentUserId) {
+      Alert.alert('Error', 'User not authenticated. Please log in again.');
+      router.replace('/index');
       return;
     }
 
+    if (!kecamatan || !kelurahan || !bpp || !komoditas || !jenisLahan || !luasTambahTanam) {
+      Alert.alert('Validasi', 'Harap lengkapi semua data!');
+      return;
+    }
+
+    const luasTambahTanamNum = parseFloat(luasTambahTanam);
+    if (isNaN(luasTambahTanamNum)) {
+      Alert.alert('Validasi', 'Luas Tambah Tanam harus berupa angka valid.');
+      return;
+    }
+
+    const wilayah = wilayahData.find(
+      (item) => item.kecamatan === kecamatan && item.kelurahan === kelurahan,
+    );
+
     const dataToUpdate = {
-      kecamatan,
-      kelurahan,
+      wilayah_id: wilayah?.id || kecamatan,
       bpp,
       tanggalLaporan,
+      kecamatan,
+      kelurahan,
       komoditas,
       jenisLahan,
-      luasTambahTanam: parseFloat(luasTambahTanam),
+      luasTambahTanam: luasTambahTanamNum,
     };
 
     try {
       await editLttById(id as string, dataToUpdate);
-      alert('Data berhasil diperbarui!');
+      Alert.alert('Sukses', 'Data berhasil diperbarui!');
       router.back();
     } catch (error) {
       console.error('Gagal update data LTT:', error);
-      alert('Gagal memperbarui data. Silakan coba lagi.');
+      Alert.alert('Error', 'Gagal memperbarui data. Silakan coba lagi.');
     }
   };
 
@@ -131,6 +189,8 @@ const EditLTTForm: React.FC = () => {
     jenisLahan,
     luasTambahTanam,
     loading,
+    wilayahData,
+    filteredKelurahan,
   } = state;
 
   if (loading) {
@@ -140,6 +200,8 @@ const EditLTTForm: React.FC = () => {
       </View>
     );
   }
+
+  const kecamatanOptions = Array.from(new Set(wilayahData.map((item) => item.kecamatan)));
 
   return (
     <KeyboardAvoidingView
@@ -161,14 +223,14 @@ const EditLTTForm: React.FC = () => {
             <View style={styles.inputBox}>
               <Picker
                 selectedValue={kecamatan}
-                onValueChange={(value) => setState((prev) => ({ ...prev, kecamatan: value }))}
+                onValueChange={handleKecamatanChange}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
               >
-                <Picker.Item label="Kecamatan" value="" />
-                <Picker.Item label="Dempo Selatan" value="Dempo Selatan" />
-                <Picker.Item label="Dempo Tengah" value="Dempo Tengah" />
-                <Picker.Item label="Dempo Utara" value="Dempo Utara" />
-                <Picker.Item label="Pagar Alam Selatan" value="Pagar Alam Selatan" />
-                <Picker.Item label="Pagar Alam Utara" value="Pagar Alam Utara" />
+                <Picker.Item label="Pilih Kecamatan" value="" />
+                {kecamatanOptions.map((kec) => (
+                  <Picker.Item key={kec} label={kec} value={kec} />
+                ))}
               </Picker>
             </View>
 
@@ -176,48 +238,19 @@ const EditLTTForm: React.FC = () => {
               <Picker
                 selectedValue={kelurahan}
                 onValueChange={(value) => setState((prev) => ({ ...prev, kelurahan: value }))}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
+                enabled={filteredKelurahan.length > 0}
               >
-                <Picker.Item label="Kelurahan" value="" />
-                <Picker.Item label="Agung Lawongan" value="Agung Lawongan" />
-                <Picker.Item label="Alun Dua" value="Alun Dua" />
-                <Picker.Item label="Atung Bungsu" value="Atung Bungsu" />
-                <Picker.Item label="Bangun Jaya" value="Bangun Jaya" />
-                <Picker.Item label="Bangun Rejo" value="Bangun Rejo" />
-                <Picker.Item label="Beringin Jaya" value="Beringin Jaya" />
-                <Picker.Item label="Besemah Serasan" value="Besemah Serasan" />
-                <Picker.Item label="Bumi Agung" value="Bumi Agung" />
-                <Picker.Item label="Burung Dinang" value="Burung Dinang" />
-                <Picker.Item label="Candi Jaya" value="Candi Jaya" />
-                <Picker.Item label="Curup Jare" value="Curup Jare" />
-                <Picker.Item label="Dempo Makmur" value="Dempo Makmur" />
-                <Picker.Item label="Gunung Dempo" value="Gunung Dempo" />
-                <Picker.Item label="Jangkar Mas" value="Jangkar Mas" />
-                <Picker.Item label="Jokoh" value="Jokoh" />
-                <Picker.Item label="Kance Diwe" value="Kance Diwe" />
-                <Picker.Item label="Karang Dalo" value="Karang Dalo" />
-                <Picker.Item label="Kusipan Babas" value="Kusipan Babas" />
-                <Picker.Item label="Lubuk Buntak" value="Lubuk Buntak" />
-                <Picker.Item label="Muara Siban" value="Muara Siban" />
-                <Picker.Item label="Nendagung" value="Nendagung" />
-                <Picker.Item label="Padang Temu" value="Padang Temu" />
-                <Picker.Item label="Pagar Wangi" value="Pagar Wangi" />
-                <Picker.Item label="Pagaralam" value="Pagaralam" />
-                <Picker.Item label="Pelang Kenidai" value="Pelang Kenidai" />
-                <Picker.Item label="Penjalang" value="Penjalang" />
-                <Picker.Item label="Prabu Dipo" value="Prabu Dipo" />
-                <Picker.Item label="Reba Tinggi" value="Reba Tinggi" />
-                <Picker.Item label="Selibar" value="Selibar" />
-                <Picker.Item label="Sidorejo" value="Sidorejo" />
-                <Picker.Item label="Sukorejo" value="Sukorejo" />
-                <Picker.Item label="Tanjung Payang" value="Tanjung Payang" />
-                <Picker.Item label="Tebat Giri Indah" value="Tebat Giri Indah" />
-                <Picker.Item label="Tumbak Ulas" value="Tumbak Ulas" />
-                <Picker.Item label="Ulu Rurah" value="Ulu Rurah" />
+                <Picker.Item label="Pilih Kelurahan" value="" />
+                {filteredKelurahan.map((kel) => (
+                  <Picker.Item key={kel} label={kel} value={kel} />
+                ))}
               </Picker>
             </View>
 
             <TextInput
-              placeholder="BPP"
+              placeholder="Nama BPP"
               style={styles.inputBox2}
               value={bpp}
               onChangeText={(text) => setState((prev) => ({ ...prev, bpp: text }))}
@@ -229,7 +262,7 @@ const EditLTTForm: React.FC = () => {
               onPress={() => setState((prev) => ({ ...prev, showDatePicker: true }))}
               style={styles.date}
             >
-              <Text style={styles.datetext}>{tanggalLaporan.toDateString()}</Text>
+              <Text style={styles.dateText}>{tanggalLaporan.toDateString()}</Text>
             </TouchableOpacity>
 
             {showDatePicker && (
@@ -251,8 +284,10 @@ const EditLTTForm: React.FC = () => {
               <Picker
                 selectedValue={komoditas}
                 onValueChange={(value) => setState((prev) => ({ ...prev, komoditas: value }))}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
               >
-                <Picker.Item label="Jenis Komoditas Pangan" value="" />
+                <Picker.Item label="Pilih Jenis Komoditas Pangan" value="" />
                 <Picker.Item label="Padi" value="Padi" />
                 <Picker.Item label="Jagung" value="Jagung" />
                 <Picker.Item label="Kedelai" value="Kedelai" />
@@ -272,15 +307,17 @@ const EditLTTForm: React.FC = () => {
               <Picker
                 selectedValue={jenisLahan}
                 onValueChange={(value) => setState((prev) => ({ ...prev, jenisLahan: value }))}
+                style={styles.picker}
+                itemStyle={styles.pickerItem}
               >
-                <Picker.Item label="Jenis Lahan" value="" />
+                <Picker.Item label="Pilih Jenis Lahan" value="" />
                 <Picker.Item label="Sawah" value="Sawah" />
                 <Picker.Item label="Non-Sawah" value="Non-Sawah" />
               </Picker>
             </View>
 
             <TextInput
-              placeholder="Luas Tambah Tanam (ha)"
+              placeholder="Luas Tambah Tanam Harian (Ha)"
               style={styles.inputBox2}
               keyboardType="numeric"
               value={luasTambahTanam}
@@ -333,35 +370,40 @@ const styles = StyleSheet.create({
   inputBox: {
     backgroundColor: '#9FC2A8',
     borderRadius: 10,
-    alignContent: 'center',
+    marginBottom: 7,
+    width: 345,
+    height: 50,
+  },
+  inputBox2: {
+    backgroundColor: '#9FC2A8',
+    borderRadius: 10,
+    paddingLeft: 20,
     marginBottom: 7,
     width: 345,
     height: 50,
     fontFamily: 'Lexend3',
     fontSize: 13,
   },
-  inputBox2: {
-    backgroundColor: '#9FC2A8',
-    borderRadius: 10,
-    alignContent: 'center',
-    paddingLeft: 20,
-    marginBottom: 7,
-    width: 345,
-    height: 50,
+  picker: {
+    width: '100%',
+    height: '100%',
+  },
+  pickerItem: {
     fontFamily: 'Lexend3',
     fontSize: 13,
   },
   date: {
     backgroundColor: '#9FC2A8',
     borderRadius: 10,
-    alignContent: 'center',
     marginBottom: 7,
     width: 345,
     height: 50,
+    justifyContent: 'center',
   },
-  datetext: {
+  dateText: {
     paddingLeft: 20,
-    paddingTop: 15,
+    fontFamily: 'Lexend3',
+    fontSize: 13,
   },
   submitButton: {
     backgroundColor: '#40744E',
@@ -373,7 +415,6 @@ const styles = StyleSheet.create({
   submitText: {
     color: '#fff',
     fontFamily: 'Lexend4',
-
     fontSize: 16,
   },
 });

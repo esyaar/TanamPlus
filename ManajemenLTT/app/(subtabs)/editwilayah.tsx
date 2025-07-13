@@ -113,7 +113,7 @@ const EditWilayah: React.FC = () => {
 
       await wilayahService.editWilayahById(id as string, wilayahData);
       Alert.alert('Sukses', 'Data wilayah berhasil disimpan!');
-      router.replace('/Admin/wilayahkerja');
+      router.back();
     } catch (error) {
       console.error('Error saat menyimpan data:', error);
       Alert.alert('Error', 'Gagal menyimpan data wilayah. Silakan coba lagi.');
